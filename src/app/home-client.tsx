@@ -191,6 +191,9 @@ const TRANSLATIONS = {
     saved: "Se han ahorrado {size} en total.",
     start: "Iniciar conversión",
     processing: "Procesando archivos...",
+    smartCrop: "Recorte Inteligente",
+    watermark: "Marca de Agua",
+    rename: "Patrón de nombre",
   },
   en: {
     heroBadge: "WebP Lab Pro Edition",
@@ -215,6 +218,9 @@ const TRANSLATIONS = {
     saved: "Saved {size} in total.",
     start: "Start conversion",
     processing: "Processing files...",
+    smartCrop: "Smart Crop",
+    watermark: "Watermark",
+    rename: "Rename Pattern",
   }
 };
 

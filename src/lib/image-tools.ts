@@ -27,6 +27,11 @@ export interface TransformOptions {
   contrast: number;
   gamma: number | null;
   sepia: boolean;
+  // Advanced Features
+  smartCrop: boolean;
+  watermarkText: string | null;
+  watermarkOpacity: number;
+  renamePattern: string | null;
 }
 
 export interface TransformPreset {
@@ -58,6 +63,10 @@ export const DEFAULT_OPTIONS: TransformOptions = {
   contrast: 1,
   gamma: null,
   sepia: false,
+  smartCrop: false,
+  watermarkText: null,
+  watermarkOpacity: 0.5,
+  renamePattern: null,
 };
 
 export const PRESETS: TransformPreset[] = [
@@ -179,6 +188,7 @@ export function parseTransformOptions(raw: unknown): TransformOptions {
   const hueInput = Number(source.hue);
   const contrastInput = Number(source.contrast);
   const gammaInput = source.gamma === null || source.gamma === undefined ? null : Number(source.gamma);
+  const watermarkOpacityInput = Number(source.watermarkOpacity);
 
   return {
     format: isOutputFormat(source.format) ? source.format : DEFAULT_OPTIONS.format,
@@ -204,6 +214,10 @@ export function parseTransformOptions(raw: unknown): TransformOptions {
     contrast: Number.isFinite(contrastInput) ? clamp(contrastInput, 0, 3) : DEFAULT_OPTIONS.contrast,
     gamma: Number.isFinite(gammaInput) ? clamp(gammaInput!, 1, 3) : null,
     sepia: toBool(source.sepia, DEFAULT_OPTIONS.sepia),
+    smartCrop: toBool(source.smartCrop, DEFAULT_OPTIONS.smartCrop),
+    watermarkText: typeof source.watermarkText === "string" ? source.watermarkText : DEFAULT_OPTIONS.watermarkText,
+    watermarkOpacity: Number.isFinite(watermarkOpacityInput) ? clamp(watermarkOpacityInput, 0, 1) : DEFAULT_OPTIONS.watermarkOpacity,
+    renamePattern: typeof source.renamePattern === "string" ? source.renamePattern : DEFAULT_OPTIONS.renamePattern,
   };
 }
 

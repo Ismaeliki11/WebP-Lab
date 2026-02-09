@@ -4,6 +4,7 @@ import path from "node:path";
 import JSZip from "jszip";
 import { NextRequest } from "next/server";
 import sharp from "sharp";
+import { optimize } from "svgo";
 
 import { OutputFormat, TransformOptions, parseTransformOptions } from "@/lib/image-tools";
 
@@ -89,6 +90,18 @@ function sanitizeBaseName(fileName: string): string {
   );
 }
 
+function resolveRenamePattern(pattern: string, originalName: string, options: TransformOptions, width?: number, height?: number): string {
+  const base = path.parse(originalName).name;
+  const now = new Date().toISOString().split('T')[0];
+
+  return pattern
+    .replace(/\[name\]/g, base)
+    .replace(/\[width\]/g, String(width || 'auto'))
+    .replace(/\[height\]/g, String(height || 'auto'))
+    .replace(/\[format\]/g, options.format)
+    .replace(/\[date\]/g, now);
+}
+
 function parseOptionsField(optionsField: FormDataEntryValue | null): TransformOptions | Response {
   if (typeof optionsField !== "string" || optionsField.trim().length === 0) {
     return parseTransformOptions({});
@@ -154,7 +167,19 @@ async function transformOne(
       throw new Error("Archivo no soportado. Solo imagenes.");
     }
 
-    const input = Buffer.from(await file.arrayBuffer());
+    const isSvg = file.type === "image/svg+xml" || file.name.endsWith(".svg");
+    let input = Buffer.from(await file.arrayBuffer());
+
+    // SVG Optimization path
+    if (isSvg && options.format === "png") { // If we want to keep it as vector or optimized raster
+      // Keep original for now or use svgo
+      const result = optimize(input.toString(), {
+        multipass: true,
+        plugins: ['preset-default']
+      });
+      if (result.data) input = Buffer.from(result.data);
+    }
+
     const metadata = await sharp(input, {
       failOn: "none",
       limitInputPixels: false,
@@ -174,6 +199,7 @@ async function transformOne(
         width: options.width ?? undefined,
         height: options.height ?? undefined,
         fit: options.fit,
+        position: options.smartCrop ? sharp.strategy.entropy : undefined,
         withoutEnlargement: options.withoutEnlargement,
         background: options.background ?? undefined,
       });
@@ -227,6 +253,30 @@ async function transformOne(
       image = image.sharpen();
     }
 
+    if (options.watermarkText) {
+      const svgWatermark = Buffer.from(`
+        <svg width="800" height="200">
+          <style>
+            .text { 
+              fill: white; 
+              font-size: 48px; 
+              font-weight: bold; 
+              font-family: sans-serif;
+              filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+            }
+          </style>
+          <text x="50%" y="50%" text-anchor="middle" class="text" opacity="${options.watermarkOpacity}">
+            ${options.watermarkText}
+          </text>
+        </svg>
+      `);
+      image = image.composite([{
+        input: svgWatermark,
+        gravity: 'center',
+        blend: 'over'
+      }]);
+    }
+
     if (!options.stripMetadata) {
       image = image.withMetadata();
     }
@@ -258,11 +308,17 @@ async function transformOne(
 
     const data = await image.toBuffer();
 
+    // Determine final name
+    const safeBaseName = sanitizeBaseName(file.name);
+    const finalBaseName = options.renamePattern
+      ? resolveRenamePattern(options.renamePattern, file.name, options, options.width || metadata.width, options.height || metadata.height)
+      : safeBaseName;
+
     return {
       status: "ok",
       index,
       originalName: file.name,
-      safeBaseName: sanitizeBaseName(file.name),
+      safeBaseName: finalBaseName,
       format: options.format,
       inputBytes: input.length,
       outputBytes: data.length,

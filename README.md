@@ -13,23 +13,29 @@ WebP Lab is a professional-grade tool designed for web developers and designers 
 ### High-Performance Processing
 - **Asynchronous Batch Execution:** Leverages backend multi-threading for concurrent image processing.
 - **Hardware Acceleration:** Real-time UI updates utilizing CSS `will-change` properties for smooth interaction during preview adjustments.
-- **Raw Processing:** No server-side limits on file dimensions or batch size (configurable via infrastructure settings).
+- **Raw Processing:** No server-side limits on file dimensions or batch size.
 
 ### Professional Image Editor
 - **Hardware-Accelerated Comparison:** Interactive split-screen slider for instant visual QA between source and optimized output.
-- **Dynamic Size Estimation:** Real-time feedback on expected output file size based on current transformation parameters.
-- **Granular Controls:** Professional adjustments for luminance, contrast, saturation, and chromatic aberration.
+- **Multi-Format Weight Comparison:** Real-time weight estimation for WebP, AVIF, and JPEG simultaneously, allowing for data-driven format selection.
+- **Granular Controls:** Professional adjustments for luminance, contrast, saturation, gamma, and chromatic filters (Sepia, B/W).
 - **Metadata Management:** Configurable stripping of EXIF, ICC profiles, and other non-essential image metadata.
+
+### Advanced "Pro" Toolset
+- **Smart Entropy Cropping:** AI-driven cropping that automatically identifies and preserves the area of highest visual interest.
+- **Dynamic Text Watermarking:** Batch-apply customizable text overlays with adjustable opacity for copyright protection.
+- **Intelligent Rename Patterns:** Define complex output naming conventions using tags like `[name]`, `[width]`, `[height]`, `[format]`, and `[date]`.
+- **Vector Optimization (SVGO):** Integrated SVG processing to strip redundant XML nodes and optimize vector assets.
 
 ### Workflow & Productivity
 - **Dual Interface Modes:** Quick-access "Smart Presets" for common tasks and "Expert Mode" for full parameter control.
-- **Session Persistence:** Persistent state management for user preferences, language settings, and conversion history.
+- **Session Persistence:** Persistent state management for user preferences, language settings (EN/ES), and conversion history.
 - **Keyboard Integration:** Global shortcuts implemented for core actions (e.g., `Ctrl+Enter` for execution).
 
 ## Technical Stack
 
 - **Framework:** Next.js 15 (App Router Architecture)
-- **Image Engine:** Sharp (High-performance Node.js image processing)
+- **Image Engines:** Sharp (Raster) & SVGO (Vector)
 - **UI Architecture:** Tailwind CSS v4, Framer Motion (Optimized layout animations)
 - **Type Safety:** 100% TypeScript implementation
 

@@ -258,43 +258,53 @@ export function ProConfig({
 
                 <motion.div variants={item} className="grid grid-cols-2 gap-3">
                     {[
-                        { key: "grayscale", label: "Escala de grises" },
+                        { key: "grayscale", label: "Grises" },
                         { key: "sepia", label: "Sepia" },
                         { key: "sharpen", label: "Enfocar" },
-                        { key: "flip", label: "Volteo vert." },
-                        { key: "flop", label: "Volteo horiz." },
-                        { key: "stripMetadata", label: "Quitar meta" },
-                        { key: "withoutEnlargement", label: "No ampliar" },
-                        { key: "lossless", label: "Sin perdida" },
+                        { key: "smartCrop", label: "Smart Crop" },
+                        { key: "flip", label: "Flip V" },
+                        { key: "flop", label: "Flip H" },
+                        { key: "stripMetadata", label: "No meta" },
+                        { key: "lossless", label: "Lossless" },
                     ].map((opt) => (
                         <label
                             key={opt.key}
-                            className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/80 px-4 py-3 cursor-pointer transition-all hover:bg-white hover:shadow-sm"
+                            className={`flex items-center gap-2 rounded-xl border px-3 py-2 cursor-pointer transition-all ${options[opt.key as keyof TransformOptions] ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--line)] bg-white'}`}
                         >
-                            <div className="relative flex h-5 w-5 items-center justify-center shrink-0">
-                                <input
-                                    type="checkbox"
-                                    checked={Boolean(options[opt.key as keyof TransformOptions])}
-                                    onChange={(event) =>
-                                        setOptions((prev) =>
-                                            parseOptions({ ...prev, [opt.key]: event.target.checked })
-                                        )
-                                    }
-                                    className="peer h-full w-full opacity-0 cursor-pointer"
-                                />
-                                <div className="absolute inset-0 rounded-md border-2 border-[var(--line)] transition-colors peer-checked:border-[var(--accent)] peer-checked:bg-[var(--accent)]" />
-                                <svg
-                                    className="absolute inset-0 h-full w-full text-white opacity-0 peer-checked:opacity-100 transition-opacity p-1"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
-                                >
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                            </div>
-                            <span className="text-[10px] font-bold text-[var(--ink-soft)] select-none uppercase tracking-tight">
+                            <input
+                                type="checkbox"
+                                checked={Boolean(options[opt.key as keyof TransformOptions])}
+                                onChange={(event) => setOptions((prev) => parseOptions({ ...prev, [opt.key]: event.target.checked }))}
+                                className="h-3 w-3 accent-[var(--accent)]"
+                            />
+                            <span className="text-[9px] font-bold text-[var(--ink-soft)] uppercase tracking-tight">
                                 {opt.label}
                             </span>
                         </label>
                     ))}
+                </motion.div>
+
+                <motion.div variants={item} className="grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)]">Marca de Agua</span>
+                        <input
+                            type="text"
+                            placeholder="Texto..."
+                            value={options.watermarkText || ""}
+                            onChange={(event) => setOptions((prev) => parseOptions({ ...prev, watermarkText: event.target.value }))}
+                            className="mt-1.5 w-full rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-medium shadow-sm outline-none focus:border-[var(--accent)]"
+                        />
+                    </label>
+                    <label className="block">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)]">Renombrado</span>
+                        <input
+                            type="text"
+                            placeholder="[name]_[width]x[height]"
+                            value={options.renamePattern || ""}
+                            onChange={(event) => setOptions((prev) => parseOptions({ ...prev, renamePattern: event.target.value }))}
+                            className="mt-1.5 w-full rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-xs font-mono shadow-sm outline-none focus:border-[var(--accent)]"
+                        />
+                    </label>
                 </motion.div>
             </div>
         </motion.div>

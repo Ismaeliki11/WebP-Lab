@@ -35,10 +35,12 @@ interface ImageEditorProps {
 
 export function ImageEditor({ isOpen, onClose, image, options, setOptions }: ImageEditorProps) {
     const [localOptions, setLocalOptions] = useState<TransformOptions>(options);
-    const [activeTab, setActiveTab] = useState<"ajustes" | "color" | "efectos">("ajustes");
+    const [activeTab, setActiveTab] = useState<"ajustes" | "color" | "efectos" | "avanzado">("ajustes");
     const [sliderPos, setSliderPos] = useState(50);
-    const [estimatedSize, setEstimatedSize] = useState<number | null>(null);
+    const [estimations, setEstimations] = useState<Record<string, number>>({});
     const [isEstimating, setIsEstimating] = useState(false);
+
+    const estimatedSize = estimations[localOptions.format] || null;
 
     const previewStyle = useMemo(() => {
         return {
@@ -65,14 +67,20 @@ export function ImageEditor({ isOpen, onClose, image, options, setOptions }: Ima
             if (!isOpen) return;
             setIsEstimating(true);
             try {
-                const fd = new FormData();
-                fd.append("files", image.file);
-                fd.append("options", JSON.stringify(localOptions));
-                const res = await fetch("/api/transform", { method: "POST", body: fd });
-                if (res.ok) {
-                    const size = Number(res.headers.get("x-total-output-bytes"));
-                    if (size) setEstimatedSize(size);
-                }
+                const formats: ("webp" | "avif" | "jpeg")[] = ["webp", "avif", "jpeg"];
+                const results: Record<string, number> = {};
+
+                await Promise.all(formats.map(async (fmt) => {
+                    const fd = new FormData();
+                    fd.append("files", image.file);
+                    fd.append("options", JSON.stringify({ ...localOptions, format: fmt }));
+                    const res = await fetch("/api/transform", { method: "POST", body: fd });
+                    if (res.ok) {
+                        const size = Number(res.headers.get("x-total-output-bytes"));
+                        if (size) results[fmt] = size;
+                    }
+                }));
+                setEstimations(results);
             } catch (e) { /* ignore */ }
             finally { setIsEstimating(false); }
         }, 1000);
@@ -241,14 +249,15 @@ export function ImageEditor({ isOpen, onClose, image, options, setOptions }: Ima
 
                         <nav className="flex border-b border-[var(--line)] px-2">
                             {[
-                                { id: 'ajustes', label: 'Color', icon: <Sun size={14} /> },
-                                { id: 'color', label: 'Tono', icon: <Droplets size={14} /> },
-                                { id: 'efectos', label: 'Efectos', icon: <Wind size={14} /> },
+                                { id: 'ajustes', label: 'Luz', icon: <Sun size={14} /> },
+                                { id: 'color', label: 'Color', icon: <Droplets size={14} /> },
+                                { id: 'efectos', label: 'Filtros', icon: <Palette size={14} /> },
+                                { id: 'avanzado', label: 'Pro', icon: <Maximize size={14} /> },
                             ].map(tab => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id as any)}
-                                    className={`flex flex-1 items-center justify-center gap-2 py-4 text-xs font-bold transition-all relative ${activeTab === tab.id ? 'text-[var(--accent)]' : 'text-[var(--ink-soft)] hover:text-[var(--ink-0)]'}`}
+                                    className={`flex flex-1 items-center justify-center gap-2 py-4 text-[10px] font-bold transition-all relative ${activeTab === tab.id ? 'text-[var(--accent)]' : 'text-[var(--ink-soft)] hover:text-[var(--ink-0)]'}`}
                                 >
                                     {tab.icon}
                                     {tab.label}
@@ -258,6 +267,26 @@ export function ImageEditor({ isOpen, onClose, image, options, setOptions }: Ima
                         </nav>
 
                         <div className="p-8 space-y-8">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)]">Formato & Comparativa</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {['webp', 'avif', 'jpeg', 'png'].map((fmt) => (
+                                        <button
+                                            key={fmt}
+                                            onClick={() => setLocalOptions(prev => ({ ...prev, format: fmt as any }))}
+                                            className={`rounded-xl border p-3 text-xs font-bold transition-all flex flex-col items-center gap-1 ${localOptions.format === fmt ? 'bg-[var(--accent)] text-white border-transparent' : 'bg-white text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--accent)]'}`}
+                                        >
+                                            {fmt.toUpperCase()}
+                                            {estimations[fmt] && (
+                                                <span className="text-[8px] opacity-70 font-mono">
+                                                    {Math.round(estimations[fmt] / 1024)} KB
+                                                </span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             {activeTab === 'ajustes' && (
                                 <div className="space-y-6">
                                     {[
@@ -375,6 +404,63 @@ export function ImageEditor({ isOpen, onClose, image, options, setOptions }: Ima
                                                 <span className="text-[8px] font-bold uppercase tracking-widest">{eff.label}</span>
                                             </button>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'avanzado' && (
+                                <div className="space-y-8">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)]">Smart Crop (Entropy)</label>
+                                            <button
+                                                onClick={() => setLocalOptions(prev => ({ ...prev, smartCrop: !prev.smartCrop }))}
+                                                className={`h-6 w-11 rounded-full transition-colors ${localOptions.smartCrop ? 'bg-[var(--accent-2)]' : 'bg-[var(--line)]'}`}
+                                            >
+                                                <div className={`h-4 w-4 rounded-full bg-white transition-transform ${localOptions.smartCrop ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
+                                        <p className="text-[9px] text-[var(--ink-soft)] italic leading-relaxed">Automatic cropping based on visual interest.</p>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)]">Text Watermark</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Watermark text..."
+                                            value={localOptions.watermarkText || ''}
+                                            onChange={(e) => setLocalOptions(prev => ({ ...prev, watermarkText: e.target.value || null }))}
+                                            className="w-full rounded-xl border border-[var(--line)] px-4 py-3 text-xs font-medium focus:border-[var(--accent)] outline-none bg-white"
+                                        />
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-[8px] font-bold text-[var(--ink-soft)] uppercase">
+                                                <span>Opacity</span>
+                                                <span>{Math.round(localOptions.watermarkOpacity * 100)}%</span>
+                                            </div>
+                                            <input
+                                                type="range" min="0" max="1" step="0.05"
+                                                value={localOptions.watermarkOpacity}
+                                                onChange={(e) => setLocalOptions(prev => ({ ...prev, watermarkOpacity: Number(e.target.value) }))}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)]">Rename Pattern</label>
+                                        <input
+                                            type="text"
+                                            placeholder="[name]_[width]x[height]"
+                                            value={localOptions.renamePattern || ''}
+                                            onChange={(e) => setLocalOptions(prev => ({ ...prev, renamePattern: e.target.value || null }))}
+                                            className="w-full rounded-xl border border-[var(--line)] px-4 py-3 text-xs font-mono focus:border-[var(--accent)] outline-none bg-white"
+                                        />
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[8px] text-[var(--ink-soft)] font-mono">
+                                            <span>[name] original</span>
+                                            <span>[width] w</span>
+                                            <span>[height] h</span>
+                                            <span>[date] yyyy-mm-dd</span>
+                                        </div>
                                     </div>
                                 </div>
                             )}
