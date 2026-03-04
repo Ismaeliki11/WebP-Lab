@@ -1,12 +1,17 @@
+
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, FileImage, Trash2, Palette, Sparkles } from "lucide-react";
+import { X, FileImage, Trash2, SlidersHorizontal, CheckCircle2, AlertCircle, Loader2, AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
+import { TransformOptions, estimateImpact, formatBytes } from "@/lib/image-tools";
+import { InfoTooltip } from "./InfoTooltip";
 
 interface QueueItem {
     id: string;
     file: File;
     previewUrl: string;
+    status?: "idle" | "processing" | "done" | "error" | "skipped";
+    isolatedFormat?: "webp" | "avif" | "jpeg" | "png";
 }
 
 interface FileListProps {
@@ -18,6 +23,9 @@ interface FileListProps {
     clearAll: () => void;
     onEdit: (item: QueueItem) => void;
     onMagic: (item: QueueItem) => void;
+    onRemoveIsolation: (id: string) => void;
+    options: TransformOptions;
+    lang: "es" | "en";
 }
 
 export function FileList({
@@ -29,13 +37,24 @@ export function FileList({
     clearAll,
     onEdit,
     onMagic,
+    onRemoveIsolation,
+    options,
+    lang,
 }: FileListProps) {
+    const isHighRisk = (item: QueueItem) => {
+        if (item.isolatedFormat) return false;
+        if (options.format === 'jpeg' && (item.file.type === 'image/png' || item.file.type === 'image/svg+xml')) return true;
+        if (options.quality < 65 && item.file.size > 1024 * 1024) return true;
+        if (options.blur > 5) return true;
+        return false;
+    };
+
     if (queue.length === 0) {
         return (
             <div className="mt-6 rounded-2xl border border-dashed border-[var(--line)] bg-white/60 p-8 text-center sm:p-12">
                 <FileImage size={40} className="mx-auto text-[var(--line)] mb-3" />
                 <p className="text-sm text-[var(--ink-soft)] font-medium">
-                    Todavia no hay archivos en cola.
+                    {lang === 'es' ? "Todavia no hay archivos en cola." : "There are currently no files in the queue."}
                 </p>
             </div>
         );
@@ -45,7 +64,7 @@ export function FileList({
         <div className="mt-6 space-y-4">
             <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-[var(--ink-soft)]">
-                    Previsualización ({previewItems.length} de {queue.length})
+                    {lang === 'es' ? "Previsualización" : "Preview"} ({previewItems.length} {lang === 'es' ? "de" : "of"} {queue.length})
                 </p>
                 <button
                     type="button"
@@ -53,7 +72,7 @@ export function FileList({
                     className="flex items-center gap-1.5 rounded-full border border-transparent bg-[var(--danger)]/10 px-3 py-1 text-xs font-semibold text-[var(--danger)] transition hover:bg-[var(--danger)] hover:text-white"
                 >
                     <Trash2 size={12} />
-                    Vaciar cola
+                    {lang === 'es' ? "Vaciar cola" : "Clear queue"}
                 </button>
             </div>
 
@@ -70,46 +89,119 @@ export function FileList({
                         >
                             <div className="relative h-28 w-full bg-[#f8fafc]">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <div className="absolute left-2 top-2 z-20 flex flex-col gap-1.5 transition-all">
+                                    {item.isolatedFormat && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemoveIsolation(item.id); }}
+                                            className="group/iso relative inline-flex items-center rounded-full bg-[var(--accent)]/90 py-0.5 pl-2 pr-0.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-[var(--accent)]"
+                                            title={lang === 'es' ? "Quitar aislamiento y seguir opciones del lote" : "Remove isolation and follow batch options"}
+                                        >
+                                            <span className="text-[9px] font-bold text-white uppercase tracking-wider mr-1">
+                                                {item.isolatedFormat}
+                                            </span>
+                                            <div className="rounded-full bg-black/10 p-0.5 text-white/90 group-hover/iso:bg-black/20 group-hover/iso:text-white transition-colors">
+                                                <X size={10} />
+                                            </div>
+                                        </button>
+                                    )}
+                                    {isHighRisk(item) && (
+                                        <InfoTooltip
+                                            title={lang === 'es' ? "Alto Riesgo Visual ⚠️" : "High Visual Risk ⚠️"}
+                                            content={
+                                                <div className="space-y-2">
+                                                    <p>{lang === 'es' ? "Esta foto va a sufrir una degradación muy grande si la procesas con los ajustes actuales." : "This photo will suffer severe degradation if processed with current settings."}</p>
+                                                    <p>{lang === 'es' ? "Puede deberse a dos motivos:" : "This may be due to two reasons:"}</p>
+                                                    <ul className="list-disc pl-5">
+                                                        <li>{lang === 'es' ? <>Has marcado una <strong>Calidad muy baja</strong> y la foto original es muy pesada.</> : <>You set a <strong>Very low quality</strong> and the original photo is very large.</>}</li>
+                                                        <li>{lang === 'es' ? <>Es una foto PNG con <strong>fondo transparente</strong> y la vas a convertir en JPEG (el fondo se volverá blanco o negro).</> : <>It's a PNG photo with <strong>transparent background</strong> and you are converting it to JPEG (background will become white or black).</>}</li>
+                                                    </ul>
+                                                    <p>{lang === 'es' ? "Te sugerimos darle al botón de Ajustes de imagen (icono de ajustes en esquina inferior) para modificarla de forma aislada." : "We suggest clicking the Image Settings button (settings icon at bottom corner) to adjust it in isolation."}</p>
+                                                </div>
+                                            }
+                                            className="rounded-full bg-orange-500/90 p-1.5 text-white shadow-sm backdrop-blur-sm cursor-help transition-transform hover:scale-105"
+                                        >
+                                            <AlertTriangle size={12} />
+                                        </InfoTooltip>
+                                    )}
+                                </div>
                                 <img
                                     src={item.previewUrl}
                                     alt={item.file.name}
                                     className="h-full w-full object-cover transition-transform group-hover:scale-105"
                                 />
-                                <div className="absolute right-2 top-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                    <button
-                                        type="button"
-                                        onClick={() => onMagic(item)}
-                                        className="rounded-full bg-white/90 p-1.5 text-amber-500 shadow-sm backdrop-blur-sm transition-all hover:bg-amber-500 hover:text-white"
-                                        title="Mejora automática"
-                                    >
-                                        <Sparkles size={14} />
-                                    </button>
+                                {item.status && item.status !== "idle" && (
+                                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/40 backdrop-blur-[2px] transition-all">
+                                        {item.status === "processing" && (
+                                            <div className="rounded-full bg-white p-2 shadow-sm text-[var(--accent)]">
+                                                <Loader2 className="animate-spin" size={24} />
+                                            </div>
+                                        )}
+                                        {item.status === "done" && (
+                                            <div className="rounded-full bg-white p-2 shadow-sm text-green-500">
+                                                <CheckCircle2 size={24} />
+                                            </div>
+                                        )}
+                                        {item.status === "error" && (
+                                            <div className="rounded-full bg-white p-2 shadow-sm text-[var(--danger)]">
+                                                <AlertCircle size={24} />
+                                            </div>
+                                        )}
+                                        {item.status === "skipped" && (
+                                            <div className="rounded-full bg-white p-2 shadow-sm text-gray-500">
+                                                <X size={24} />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                            </div>
+                            <div className="flex items-center justify-between gap-2 p-3">
+                                <div className="min-w-0">
+                                    {(() => {
+                                        const estimated = estimateImpact(item.file.size, options.format, options.quality, options.width, options.height);
+                                        const saved = item.file.size - estimated;
+                                        const percent = Math.round((saved / item.file.size) * 100);
+                                        const isSaving = saved > 0;
+
+                                        return (
+                                            <div className="flex flex-col">
+                                                <span className="truncate text-sm font-bold text-[var(--ink-0)]" title={item.file.name}>
+                                                    {item.file.name}
+                                                </span>
+                                                <div className="mt-1 flex items-center gap-2">
+                                                    <span className="text-xs font-semibold text-[var(--ink-soft)] bg-[var(--bg-soft)] px-2 py-0.5 rounded-md">
+                                                        {formatBytes(item.file.size)}
+                                                    </span>
+                                                    <span className="text-[var(--ink-light)] text-xs">→</span>
+                                                    <span className={`text - xs font - bold ${isSaving ? 'text-emerald-600' : 'text-amber-600'} `}>
+                                                        ~{formatBytes(estimated)}
+                                                    </span>
+                                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isSaving ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'}`}>
+                                                        {isSaving ? '-' : '+'}{Math.abs(percent)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                                <div className={`flex items-center gap-2 shrink-0 ${item.status && item.status !== 'idle' ? 'opacity-50 pointer-events-none' : ''}`}>
                                     <button
                                         type="button"
                                         onClick={() => onEdit(item)}
-                                        className="rounded-full bg-white/90 p-1.5 text-[var(--accent)] shadow-sm backdrop-blur-sm transition-all hover:bg-[var(--accent)] hover:text-white"
-                                        title="Editar detalles"
+                                        className="flex items-center justify-center rounded-xl bg-gray-100/80 p-2.5 text-[var(--ink-soft)] transition-all hover:bg-[var(--accent)] hover:text-white hover:scale-105 active:scale-95 shadow-sm"
+                                        title={lang === 'es' ? "Ajustes de imagen" : "Image settings"}
                                     >
-                                        <Palette size={14} />
+                                        <SlidersHorizontal size={16} />
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => removeFile(item.id)}
-                                        className="rounded-full bg-white/90 p-1.5 text-[var(--danger)] shadow-sm backdrop-blur-sm transition-all hover:bg-[var(--danger)] hover:text-white"
-                                        title="Quitar"
+                                        className="flex items-center justify-center rounded-xl bg-gray-100/80 p-2.5 text-[var(--ink-soft)] transition-all hover:bg-[var(--danger)] hover:text-white hover:scale-105 active:scale-95 shadow-sm"
+                                        title={lang === 'es' ? "Quitar foto" : "Remove photo"}
                                     >
-                                        <X size={14} />
+                                        <Trash2 size={16} />
                                     </button>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between gap-2 p-3">
-                                <div className="min-w-0">
-                                    <p className="truncate text-xs font-bold text-[var(--ink-0)]">
-                                        {item.file.name}
-                                    </p>
-                                    <p className="font-mono text-[10px] text-[var(--ink-soft)] mt-0.5">
-                                        {formatBytes(item.file.size)}
-                                    </p>
                                 </div>
                             </div>
                         </motion.li>
@@ -119,7 +211,7 @@ export function FileList({
 
             {hiddenPreviewCount > 0 && (
                 <p className="text-center text-xs font-medium text-[var(--ink-soft)] bg-white/40 py-2 rounded-full border border-[var(--line)]">
-                    +{hiddenPreviewCount} {hiddenPreviewCount === 1 ? "archivo más" : "archivos más"} en cola.
+                    +{hiddenPreviewCount} {lang === 'es' ? (hiddenPreviewCount === 1 ? "archivo más" : "archivos más") : (hiddenPreviewCount === 1 ? "more file" : "more files")} {lang === 'es' ? "en cola." : "in queue."}
                 </p>
             )}
         </div>

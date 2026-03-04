@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
+import { InfoTooltip } from "./InfoTooltip";
 
 type EasyGoal = "web-fast" | "balanced" | "max-quality" | "social";
 type EasySize = "original" | "1920" | "1200" | "800";
@@ -27,6 +28,7 @@ interface EasyConfigProps {
         quality: number;
         size: string;
     };
+    lang: "es" | "en";
 }
 
 export function EasyConfig({
@@ -37,6 +39,7 @@ export function EasyConfig({
     compressionText,
     reset,
     previewOptions,
+    lang,
 }: EasyConfigProps) {
     const container = {
         hidden: { opacity: 0 },
@@ -150,7 +153,22 @@ export function EasyConfig({
 
             <motion.div variants={item}>
                 <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-bold text-[var(--ink-0)]">Nivel de Compresion</p>
+                    <p className="text-sm font-bold text-[var(--ink-0)] flex items-center gap-2">
+                        Nivel de Compresion
+                        <InfoTooltip
+                            title={lang === 'es' ? "Nivel de Compresión" : "Compression Level"}
+                            content={
+                                <div className="space-y-2">
+                                    <p>{lang === 'es' ? "Controla cómo se balancea la calidad visual y el peso del archivo resultante." : "Controls the balance between visual quality and resulting file size."}</p>
+                                    <ul className="list-disc pl-5 space-y-1 text-[var(--ink-soft)]">
+                                        <li><strong>{lang === 'es' ? "Ligera:" : "Light:"}</strong> {lang === 'es' ? "Mantiene la máxima calidad posible. Ideal para fotografía y archivos importantes." : "Maintains maximum possible quality. Ideal for photography and important files."}</li>
+                                        <li><strong>{lang === 'es' ? "Equilibrada:" : "Balanced:"}</strong> {lang === 'es' ? "El mejor balance. Reduce considerablemente el peso sin pérdida visible a simple vista." : "The best balance. Considerably reduces file size without visible loss to the naked eye."}</li>
+                                        <li><strong>{lang === 'es' ? "Intensa:" : "Intense:"}</strong> {lang === 'es' ? "Archivos diminutos. Puede presentar ligera borrosidad o artefactos útiles para miniaturas o web ultrarrápida." : "Tiny files. May present slight blurriness or artifacts. Useful for thumbnails or ultra-fast web."}</li>
+                                    </ul>
+                                </div>
+                            }
+                        />
+                    </p>
                     <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--accent)] uppercase">
                         {compressionText(settings.compressionLevel)}
                     </span>
@@ -202,8 +220,37 @@ export function EasyConfig({
                                 <polyline points="20 6 9 17 4 12" />
                             </svg>
                         </div>
-                        <span className="text-xs font-bold text-[var(--ink-soft)] select-none">
+                        <span className="flex items-center gap-2 text-xs font-bold text-[var(--ink-soft)] select-none">
                             {opt.label}
+                            {opt.key === 'stripMetadata' && (
+                                <InfoTooltip
+                                    title={lang === 'es' ? "Quitar metadata (EXIF)" : "Strip metadata (EXIF)"}
+                                    content={
+                                        <div className="space-y-2">
+                                            <p>{lang === 'es' ? "Esta opción elimina los datos ocultos dentro de la imagen." : "This option removes the hidden data inside the image."}</p>
+                                            <p><strong>{lang === 'es' ? "¿Qué incluye?" : "What does it include?"}</strong> {lang === 'es' ? "Ubicaciones GPS, modelo de cámara, fecha exacta y perfiles de color (ICC)." : "GPS locations, camera model, exact date, and color profiles (ICC)."}</p>
+                                            <p><strong>{lang === 'es' ? "¿Por qué usarlo?" : "Why use it?"}</strong> {lang === 'es' ? "Reduce aún más el peso final y protege tu privacidad al publicarlas en la web." : "Further reduces final file size and protects your privacy when publishing on the web."}</p>
+                                            <p className="text-[var(--danger)]/80 text-xs">{lang === 'es' ? "Desactívalo solo si eres fotógrafo/diseñador y necesitas mantener el perfil de color original para imprimir." : "Disable it only if you are a photographer/designer and need to keep the original color profile for printing."}</p>
+                                        </div>
+                                    }
+                                />
+                            )}
+                            {opt.key === 'withoutEnlargement' && (
+                                <InfoTooltip
+                                    title={lang === 'es' ? "No ampliar (Evitar borrosidad)" : "Do not enlarge (Avoid blurriness)"}
+                                    content={
+                                        <div className="space-y-2">
+                                            <p>{lang === 'es' ? "Impide que la imagen se haga artificialmente más grande de lo que realmente es." : "Prevents the image from becoming artificially larger than it actually is."}</p>
+                                            <p>{lang === 'es' ? "Si solicitas un tamaño de" : "If you request a size of"} <strong>1920px</strong>{lang === 'es' ? ", pero subes una imagen pequeña de" : ", but upload a small image of"} <strong>800px</strong>:</p>
+                                            <ul className="list-disc pl-5 space-y-1 text-[var(--ink-soft)]">
+                                                <li><strong>{lang === 'es' ? "Activado:" : "Enabled:"}</strong> {lang === 'es' ? "La imagen se exporta a 800px (100% nítida)." : "The image is exported at 800px (100% sharp)."}</li>
+                                                <li><strong>{lang === 'es' ? "Desactivado:" : "Disabled:"}</strong> {lang === 'es' ? "La imagen se estirará a 1920px (se verá borrosa y pixelada)." : "The image will stretch to 1920px (will look blurry and pixelated)."}</li>
+                                            </ul>
+                                            <p>{lang === 'es' ? "Se recomienda dejarlo siempre marcado." : "It is recommended to always leave it checked."}</p>
+                                        </div>
+                                    }
+                                />
+                            )}
                         </span>
                     </label>
                 ))}
