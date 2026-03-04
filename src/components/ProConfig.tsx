@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Settings2, SlidersHorizontal, Save, X, Type, FileText, Hash, Calendar, Sparkles, RefreshCw, Scissors } from "lucide-react";
+import { Settings2, SlidersHorizontal, Save, X, Type, FileText, Hash, Calendar, Sparkles, RefreshCw, Scissors, Info } from "lucide-react";
 import { TransformOptions, TransformPreset, PRESETS, OUTPUT_FORMATS, RESIZE_FITS } from "@/lib/image-tools";
 import { InfoTooltip, InfoNote } from "./InfoTooltip";
 
@@ -225,7 +225,10 @@ export function ProConfig({
                 <motion.div variants={item} className="grid grid-cols-2 gap-4">
                     <label className="block">
                         <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)]">{lang === 'es' ? "Ancho" : "Width"}</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)] flex items-center gap-1.5" title={lang === 'es' ? "Si lo dejas vacío, se usa el tamaño original" : "If left empty, original size is used"}>
+                                {lang === 'es' ? "Ancho" : "Width"}
+                                <Info size={12} className="cursor-help text-[var(--ink-light)] hover:text-[var(--accent)] transition-colors" />
+                            </span>
                             <span className="text-[10px] font-bold text-[var(--ink-light)]">px</span>
                         </div>
                         <input
@@ -243,7 +246,10 @@ export function ProConfig({
                     </label>
                     <label className="block">
                         <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)]">{lang === 'es' ? "Alto" : "Height"}</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)] flex items-center gap-1.5" title={lang === 'es' ? "Si lo dejas vacío, se usa el tamaño original" : "If left empty, original size is used"}>
+                                {lang === 'es' ? "Alto" : "Height"}
+                                <Info size={12} className="cursor-help text-[var(--ink-light)] hover:text-[var(--accent)] transition-colors" />
+                            </span>
                             <span className="text-[10px] font-bold text-[var(--ink-light)]">px</span>
                         </div>
                         <input
