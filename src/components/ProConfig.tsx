@@ -205,19 +205,33 @@ export function ProConfig({
                     <label className="block">
                         <div className="flex justify-between items-center">
                             <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)]">{lang === 'es' ? "Calidad" : "Quality"}</span>
-                            <span className="text-xs font-mono font-bold text-[var(--accent)]">{options.quality}%</span>
+                            <span className={`text-xs font-mono font-bold ${options.lossless ? 'text-[var(--ink-light)]' : 'text-[var(--accent)]'}`}>
+                                {options.lossless ? (lang === 'es' ? 'IGNORADA' : 'IGNORED') : `${options.quality}%`}
+                            </span>
                         </div>
+                        {options.lossless && (
+                            <div className="bg-[var(--accent)]/10 text-[var(--ink-0)] p-3 rounded-xl border border-[var(--accent)]/20 text-xs shadow-sm mt-3 mb-1">
+                                <p className="font-bold flex items-center gap-1.5 mb-1">
+                                    <Info size={14} className="text-[var(--accent)]" />
+                                    {lang === 'es' ? "Ajuste secundario ignorado" : "Secondary setting ignored"}
+                                </p>
+                                <p className="opacity-90 leading-relaxed text-[11px]">
+                                    {lang === 'es' ? "Al activar la compresión matemática 'Lossless', se retiene el máximo nivel de detalle original forzosamente. Ajustar porcentajes aquí ya no tiene efecto." : "By activating the mathematical 'Lossless' compression, the maximum level of original detail is forcibly retained. Adjusting percentages here no longer has any effect."}
+                                </p>
+                            </div>
+                        )}
                         <input
                             type="range"
                             min={1}
                             max={100}
+                            disabled={options.lossless}
                             value={options.quality}
                             onChange={(event) =>
                                 setOptions((prev) =>
                                     parseOptions({ ...prev, quality: Number(event.target.value) })
                                 )
                             }
-                            className="mt-3 w-full h-1.5 rounded-full bg-[var(--line)] accent-[var(--accent)] appearance-none cursor-pointer"
+                            className="mt-3 w-full h-1.5 rounded-full bg-[var(--line)] accent-[var(--accent)] appearance-none cursor-pointer disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed transition-all"
                         />
                     </label>
                 </motion.div>
@@ -225,9 +239,15 @@ export function ProConfig({
                 <motion.div variants={item} className="grid grid-cols-2 gap-4">
                     <label className="block">
                         <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)] flex items-center gap-1.5" title={lang === 'es' ? "Si lo dejas vacío, se usa el tamaño original" : "If left empty, original size is used"}>
+                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)] flex items-center gap-1.5">
                                 {lang === 'es' ? "Ancho" : "Width"}
-                                <Info size={12} className="cursor-help text-[var(--ink-light)] hover:text-[var(--accent)] transition-colors" />
+                                <div className="relative group/tt flex items-center">
+                                    <Info size={14} className="text-[var(--ink-light)] group-hover/tt:text-[var(--accent)] cursor-help transition-colors" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] pointer-events-none opacity-0 group-hover/tt:opacity-100 transition-all translate-y-1 group-hover/tt:translate-y-0 z-50 bg-[var(--ink-0)] text-white text-[10px] font-medium px-3 py-2 rounded-xl shadow-xl text-center leading-tight normal-case tracking-normal">
+                                        {lang === 'es' ? "Si lo dejas vacío, se mantendrá el ancho original de la imagen." : "If left empty, the original image width will be kept."}
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-[var(--ink-0)]" />
+                                    </div>
+                                </div>
                             </span>
                             <span className="text-[10px] font-bold text-[var(--ink-light)]">px</span>
                         </div>
@@ -246,9 +266,15 @@ export function ProConfig({
                     </label>
                     <label className="block">
                         <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)] flex items-center gap-1.5" title={lang === 'es' ? "Si lo dejas vacío, se usa el tamaño original" : "If left empty, original size is used"}>
+                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)] flex items-center gap-1.5">
                                 {lang === 'es' ? "Alto" : "Height"}
-                                <Info size={12} className="cursor-help text-[var(--ink-light)] hover:text-[var(--accent)] transition-colors" />
+                                <div className="relative group/tt flex items-center">
+                                    <Info size={14} className="text-[var(--ink-light)] group-hover/tt:text-[var(--accent)] cursor-help transition-colors" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] pointer-events-none opacity-0 group-hover/tt:opacity-100 transition-all translate-y-1 group-hover/tt:translate-y-0 z-50 bg-[var(--ink-0)] text-white text-[10px] font-medium px-3 py-2 rounded-xl shadow-xl text-center leading-tight normal-case tracking-normal">
+                                        {lang === 'es' ? "Si lo dejas vacío, se mantendrá el alto original de la imagen." : "If left empty, the original image height will be kept."}
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-[var(--ink-0)]" />
+                                    </div>
+                                </div>
                             </span>
                             <span className="text-[10px] font-bold text-[var(--ink-light)]">px</span>
                         </div>
@@ -276,6 +302,17 @@ export function ProConfig({
                                 content={
                                     <div className="space-y-2">
                                         <p>{lang === 'es' ? "Determina qué hace el programa si la foto original tiene distinta proporción que el Alto y Ancho pedidos." : "Determines what the program does if the original photo has a different aspect ratio than the requested Height and Width."}</p>
+                                        {(!options.width && !options.height) && (
+                                            <div className="bg-[var(--accent)]/10 text-[var(--ink-0)] p-3 rounded-xl border border-[var(--accent)]/20 text-xs shadow-sm my-3">
+                                                <p className="font-bold flex items-center gap-1.5 mb-1">
+                                                    <Info size={14} className="text-[var(--accent)]" />
+                                                    {lang === 'es' ? "Ajuste no necesario" : "Fit unnecessary"}
+                                                </p>
+                                                <p className="opacity-90 leading-relaxed text-[11px]">
+                                                    {lang === 'es' ? "Al mantener el tamaño original de la imagen, modificar cómo encaja no hace falta. Esta opción permanecerá bloqueada." : "By keeping the original image size, modifying how it fits is unnecessary. This option will remain locked."}
+                                                </p>
+                                            </div>
+                                        )}
                                         <ul className="list-disc pl-5 space-y-1 text-[var(--ink-soft)] flex flex-col gap-1">
                                             <li><strong>Cover {lang === 'es' ? "(Recorte)" : "(Crop)"}:</strong> {lang === 'es' ? "La foto llenará todo el espacio y se cortará lo que sobre. Sin bandas vacías." : "The photo will fill the entire space and anything extra will be cropped out. No empty bands."}</li>
                                             <li><strong>Contain {lang === 'es' ? "(Contener)" : "(Contain)"}:</strong> {lang === 'es' ? "Se verán bandas vacías a los lados, pero la foto nunca se recortará ni achatarrará." : "Empty bands will be visible on the sides, but the photo will never be cropped or squashed."}</li>
@@ -287,11 +324,12 @@ export function ProConfig({
                             />
                         </span>
                         <select
+                            disabled={!options.width && !options.height}
                             value={options.fit}
                             onChange={(event) =>
                                 setOptions((prev) => parseOptions({ ...prev, fit: event.target.value }))
                             }
-                            className="mt-1.5 w-full rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-medium shadow-sm outline-none focus:border-[var(--accent)]"
+                            className="mt-1.5 w-full rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-medium shadow-sm outline-none focus:border-[var(--accent)] disabled:opacity-50 disabled:bg-[var(--line)]/30 disabled:cursor-not-allowed transition-all"
                         >
                             {RESIZE_FITS.map((fit) => (
                                 <option key={fit} value={fit}>
@@ -364,26 +402,23 @@ export function ProConfig({
                     <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)]">{lang === 'es' ? "Ajustes Pro" : "Pro Settings"}</p>
                     <div className="grid gap-4 sm:grid-cols-2">
                         {[
-                            { key: 'brightness', label: lang === 'es' ? 'Brillo' : 'Brightness', min: 0.5, max: 1.5, step: 0.05 },
-                            { key: 'contrast', label: lang === 'es' ? 'Contraste' : 'Contrast', min: 0.5, max: 1.5, step: 0.05 },
-                            { key: 'saturation', label: lang === 'es' ? 'Saturación' : 'Saturation', min: 0, max: 2, step: 0.1 },
-                            { key: 'gamma', label: 'Gamma', min: 1, max: 3, step: 0.1 },
+                            { key: 'brightness', label: lang === 'es' ? 'Brillo' : 'Brightness', tooltip: lang === 'es' ? 'Ajusta la luminosidad general.' : 'Adjusts the overall lightness.', min: 0.5, max: 1.5, step: 0.05 },
+                            { key: 'contrast', label: lang === 'es' ? 'Contraste' : 'Contrast', tooltip: lang === 'es' ? 'Aumenta o disminuye la diferencia de tonos.' : 'Increases or decreases tonal difference.', min: 0.5, max: 1.5, step: 0.05 },
+                            { key: 'saturation', label: lang === 'es' ? 'Saturación' : 'Saturation', tooltip: lang === 'es' ? 'Controla la viveza de los colores.' : 'Controls the vividness of colors.', min: 0, max: 2, step: 0.1 },
+                            { key: 'gamma', label: 'Gamma', tooltip: lang === 'es' ? 'Altera tonos medios sin quemar blancos.' : 'Alters midtones without blowing out whites.', min: 1, max: 3, step: 0.1 },
                         ].map(adj => (
                             <div key={adj.key} className="space-y-2">
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-[10px] font-bold text-[var(--ink-soft)] uppercase flex items-center gap-1">
+                                    <span className="text-[10px] font-bold text-[var(--ink-soft)] uppercase flex items-center gap-1.5">
                                         {adj.label}
-                                        {adj.key === 'gamma' && (
-                                            <InfoTooltip
-                                                title={lang === 'es' ? "Corrección Gamma" : "Gamma Correction"}
-                                                content={lang === 'es' ? "Altera los tonos medios de la imagen afectando al 'brillo percibido' sin quemar los blancos ni empastar demasiado los negros profundos. Ayuda a revivir sombras muy oscuras. (El estándar es de 2.2 a 2.4 en pantallas)." : "Alters the midtones of the image affecting the 'perceived brightness' without blowing out the whites or excessively crushing deep blacks. Helps revive very dark shadows. (Standard is 2.2 to 2.4 on screens)."}
-                                            />
-                                        )}
-                                        {adj.key === 'contrast' && (
-                                            <InfoTooltip
-                                                title={lang === 'es' ? "Contraste" : "Contrast"}
-                                                content={lang === 'es' ? "Valores mayores a 1 aumentan la separación entre claros y oscuros, haciendo la foto más 'vívida / dura'." : "Values greater than 1 increase the separation between lights and darks, making the photo more 'vivid / harsh'."}
-                                            />
+                                        {adj.tooltip && (
+                                            <div className="relative group/tt flex items-center">
+                                                <Info size={12} className="text-[var(--ink-light)] group-hover/tt:text-[var(--accent)] cursor-help transition-colors" />
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[160px] pointer-events-none opacity-0 group-hover/tt:opacity-100 transition-all translate-y-1 group-hover/tt:translate-y-0 z-50 bg-[var(--ink-0)] text-white text-[10px] font-medium px-3 py-2 rounded-xl shadow-xl text-center leading-tight normal-case tracking-normal">
+                                                    {adj.tooltip}
+                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-[var(--ink-0)]" />
+                                                </div>
+                                            </div>
                                         )}
                                     </span>
                                     <span className="text-[10px] font-mono text-[var(--accent)]">{options[adj.key as keyof TransformOptions] ?? 1}</span>
@@ -404,26 +439,52 @@ export function ProConfig({
 
                 <motion.div variants={item} className="grid grid-cols-2 gap-3">
                     {[
-                        { key: "grayscale", label: lang === 'es' ? "Grises" : "Grayscale" },
-                        { key: "sepia", label: "Sepia" },
-                        { key: "sharpen", label: lang === 'es' ? "Enfocar" : "Sharpen" },
+                        { key: "grayscale", label: lang === 'es' ? "Grises" : "Grayscale", tooltip: lang === 'es' ? "Convierte a blanco y negro." : "Converts to black and white." },
+                        { key: "sepia", label: "Sepia", tooltip: lang === 'es' ? "Tono vintage amarillento." : "Vintage yellowish tone." },
+                        { key: "sharpen", label: lang === 'es' ? "Enfocar" : "Sharpen", tooltip: lang === 'es' ? "Mejora bordes y nitidez." : "Enhances edges and sharpness." },
+                        { key: "smartCrop", label: "Smart Crop", tooltip: lang === 'es' ? "Centra el recorte en lo importante." : "Centers crop on subject." },
+                        { key: "flip", label: "Flip V", tooltip: lang === 'es' ? "Voltea boca abajo." : "Flips upside down." },
+                        { key: "flop", label: "Flip H", tooltip: lang === 'es' ? "Efecto espejo." : "Horizontal mirror." },
                         {
-                            key: "smartCrop", label: "Smart Crop", tooltip: lang === 'es' ? (
-                                <div>
-                                    <p>Si fuerzas un Alto/Ancho que recorta la foto, el sistema identificará de forma inteligente el punto de mayor interés visual para centrar el recorte ahí.</p>
-                                    <InfoNote>Este ajuste se aplica únicamente al procesar y descargar la imagen final.</InfoNote>
+                            key: "stripMetadata", label: lang === 'es' ? "No meta" : "No Meta", tooltipNative: true, tooltip: lang === 'es' ? (
+                                <div className="space-y-2">
+                                    <p>Elimina todos los "datos extra ocultos" (metadatos) que vienen incrustados dentro de la fotografía original, como por ejemplo:</p>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li>Coordenadas GPS de dónde tomaste la foto.</li>
+                                        <li>Datos técnicos de la cámara (Modelo, Exposición, ISO).</li>
+                                        <li>Perfiles de color profundos (Útiles solo en imprentas).</li>
+                                    </ul>
+                                    <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10"><strong>Recomendación:</strong> Mantenlo marcado para subir imágenes a internet. Ahorrarás mucho peso de archivo inútil y protegerás la privacidad de tu ubicación donde tomaste la foto.</InfoNote>
                                 </div>
                             ) : (
-                                <div>
-                                    <p>If you force a Height/Width that crops the photo, the system will intelligently identify the point of maximum visual interest to center the crop there.</p>
-                                    <InfoNote>This setting is applied only upon processing and downloading the final image.</InfoNote>
+                                <div className="space-y-2">
+                                    <p>Removes all "hidden extra data" (metadata) embedded within the original photograph, such as:</p>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li>GPS coordinates of where you took the photo.</li>
+                                        <li>Technical camera data (Model, Exposure, ISO).</li>
+                                        <li>Deep color profiles (Only useful in print shops).</li>
+                                    </ul>
+                                    <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10"><strong>Recommendation:</strong> Keep this checked for uploading images to the internet. You'll save a lot of useless file size and protect the privacy of your location.</InfoNote>
                                 </div>
                             )
                         },
-                        { key: "flip", label: "Flip V", tooltip: lang === 'es' ? "Voltea la imagen boca abajo verticalmente." : "Flips the image upside down vertically." },
-                        { key: "flop", label: "Flip H", tooltip: lang === 'es' ? "Efecto espejo horizontal." : "Horizontal mirror effect." },
-                        { key: "stripMetadata", label: lang === 'es' ? "No meta" : "No Meta", tooltip: lang === 'es' ? "Elimina GPS y perfil de color. Beneficioso para aligerar peso web, malo si necesitas calidad de impresión profesional." : "Removes GPS and color profile. Beneficial to reduce web file size, bad if you need professional print quality." },
-                        { key: "lossless", label: "Lossless", tooltip: lang === 'es' ? "Compresión sin pérdida matemática. Te garantiza la misma calidad absoluta que el original, a coste de que el archivo final sea muchísimo más pesado. Solo soporta formatos WebP, AVIF o PNG." : "Mathematical lossless compression. Guarantees the absolute same quality as the original, at the cost of the final file being much heavier. Only supports WebP, AVIF or PNG formats." },
+                        {
+                            key: "lossless", label: "Lossless", tooltipNative: true, tooltip: lang === 'es' ? (
+                                <div className="space-y-2">
+                                    <p>Consiste en una compresión puramente matemática en la que <strong>no se elimina ni un solo píxel, ni un solo color, ni un solo detalle</strong> de la imagen de origen. Es idéntica al 100%.</p>
+                                    <p>Funciona de manera parecida a meter archivos en un ".zip".</p>
+                                    <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10">Se garantiza la calidad absoluta y perfecta a costa de que <strong>el tamaño en megas del archivo final sea muchísimo más pesado</strong>. Si activas esto, perderás todas las ventajas de reducir tamaño para páginas web.</InfoNote>
+                                    <p className="text-xs opacity-70 mt-2">P.D. Solo soporta formatos de salida modernos como WebP, AVIF o PNG.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <p>Consists of a purely mathematical compression where <strong>not a single pixel, color, or detail is removed</strong> from the source image. It is 100% identical.</p>
+                                    <p>It works similarly to putting files in a ".zip".</p>
+                                    <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10">Absolute and perfect quality is guaranteed at the cost of <strong>the final file size in megabytes being remarkably heavier</strong>. Activating this negates all advantages of reducing file size for websites.</InfoNote>
+                                    <p className="text-xs opacity-70 mt-2">P.S. Only supports modern output formats like WebP, AVIF or PNG.</p>
+                                </div>
+                            )
+                        },
                     ].map((opt) => (
                         <label
                             key={opt.key}
@@ -441,9 +502,19 @@ export function ProConfig({
                                 </span>
                             </div>
                             {opt.tooltip && (
-                                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                                    <InfoTooltip title={opt.label} content={opt.tooltip} />
-                                </div>
+                                opt.tooltipNative ? (
+                                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                                        <InfoTooltip title={opt.label} content={opt.tooltip as React.ReactNode} />
+                                    </div>
+                                ) : (
+                                    <div className="relative group/tt flex items-center">
+                                        <Info size={12} className="text-[var(--ink-light)] group-hover/tt:text-[var(--accent)] cursor-help transition-colors" />
+                                        <div className="absolute bottom-full right-0 mb-2 w-max max-w-[140px] pointer-events-none opacity-0 group-hover/tt:opacity-100 transition-all translate-y-1 group-hover/tt:translate-y-0 z-50 bg-[var(--ink-0)] text-white text-[10px] font-medium px-3 py-2 rounded-xl shadow-xl text-center leading-tight normal-case tracking-normal">
+                                            {opt.tooltip as string}
+                                            <div className="absolute top-full right-1.5 border-[4px] border-transparent border-t-[var(--ink-0)]" />
+                                        </div>
+                                    </div>
+                                )
                             )}
                         </label>
                     ))}
