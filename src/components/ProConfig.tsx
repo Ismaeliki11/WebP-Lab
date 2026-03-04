@@ -157,7 +157,7 @@ export function ProConfig({
                             <Save size={12} />
                             {lang === 'es' ? "Guardar como nueva receta" : "Save as new recipe"}
                         </button>
-                        <InfoTooltip
+                        <InfoTooltip lang={lang}
                             title={lang === 'es' ? "Guardar como receta custom" : "Save as custom recipe"}
                             content={
                                 <div className="space-y-2">
@@ -175,7 +175,7 @@ export function ProConfig({
                     <label className="block">
                         <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)] flex items-center gap-1.5">
                             {lang === 'es' ? "Formato" : "Format"}
-                            <InfoTooltip
+                            <InfoTooltip lang={lang}
                                 title={lang === 'es' ? "Formatos de Salida" : "Output Formats"}
                                 content={
                                     <ul className="list-disc pl-5 space-y-2 text-[var(--ink-soft)]">
@@ -297,7 +297,7 @@ export function ProConfig({
                     <label className="block">
                         <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)] flex items-center gap-1.5">
                             {lang === 'es' ? "Modo de ajuste" : "Fit Mode"}
-                            <InfoTooltip
+                            <InfoTooltip lang={lang}
                                 title={lang === 'es' ? "Modos de Ajuste (Crop)" : "Fit Modes (Crop)"}
                                 content={
                                     <div className="space-y-2">
@@ -504,7 +504,7 @@ export function ProConfig({
                             {opt.tooltip && (
                                 opt.tooltipNative ? (
                                     <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                                        <InfoTooltip title={opt.label} content={opt.tooltip as React.ReactNode} />
+                                        <InfoTooltip lang={lang} title={opt.label} content={opt.tooltip as React.ReactNode} />
                                     </div>
                                 ) : (
                                     <div className="relative group/tt flex items-center">
@@ -529,7 +529,7 @@ export function ProConfig({
                                 </div>
                                 {lang === 'es' ? "Configuración de Marca de Agua" : "Watermark Settings"}
                             </h4>
-                            <InfoTooltip
+                            <InfoTooltip lang={lang}
                                 title={lang === 'es' ? "Marca de Agua Textual" : "Text Watermark"}
                                 content={
                                     <div className="space-y-3">
@@ -674,7 +674,7 @@ export function ProConfig({
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-0)] flex items-center gap-1.5">
                                         {lang === 'es' ? "Inyectar en Metadatos" : "Embed in Metadata"}
-                                        <InfoTooltip
+                                        <InfoTooltip lang={lang}
                                             title={lang === 'es' ? "Metadatos Legales" : "Legal Metadata"}
                                             content={lang === 'es' ?
                                                 "Asocia tu autoría al archivo de forma interna. Esto permite que programas como Photoshop o Windows reconozcan el Copyright incluso si la imagen se edita o se borra la firma visual." :
@@ -705,7 +705,7 @@ export function ProConfig({
                                     </div>
                                     {lang === 'es' ? "Patrón de Nombres (SEO)" : "Filename Pattern (SEO)"}
                                 </h4>
-                                <InfoTooltip
+                                <InfoTooltip lang={lang}
                                     title={lang === 'es' ? "Optimización SEO" : "SEO Optimization"}
                                     content={
                                         <div className="space-y-4">
@@ -851,7 +851,7 @@ export function ProConfig({
                                                         <span className={`text-[10px] font-bold uppercase tracking-widest leading-none flex items-center gap-1.5 ${options.seoFriendly ? 'text-[var(--accent)]' : 'text-[var(--ink-0)]'}`}>
                                                             {lang === 'es' ? "Limpieza SEO" : "SEO Cleaning"}
                                                             <div className="scale-75 -translate-y-0.5">
-                                                                <InfoTooltip
+                                                                <InfoTooltip lang={lang}
                                                                     title={lang === 'es' ? "Optimización Web" : "Web Optimization"}
                                                                     content={lang === 'es' ?
                                                                         "Esta opción asegura que tus archivos funcionen en cualquier servidor. Convierte 'Mi Foto 2024!.jpg' en 'mi-foto-2024.webp' eliminando espacios, acentos y caracteres especiales." :

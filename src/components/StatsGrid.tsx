@@ -7,29 +7,30 @@ interface StatsGridProps {
     queueLength: number;
     totalSize: string;
     compressionRatio: number | null;
+    lang: "es" | "en";
 }
 
-export function StatsGrid({ queueLength, totalSize, compressionRatio }: StatsGridProps) {
+export function StatsGrid({ queueLength, totalSize, compressionRatio, lang }: StatsGridProps) {
     return (
         <div className="grid grid-cols-3 gap-4">
             {[
                 {
                     icon: <Zap size={16} />,
-                    label: "Archivos",
+                    label: lang === 'es' ? "Archivos" : "Files",
                     value: queueLength,
                     color: "text-[var(--accent)]",
                     bg: "bg-[var(--accent-soft)]"
                 },
                 {
                     icon: <HardDrive size={16} />,
-                    label: "Peso Total",
+                    label: lang === 'es' ? "Peso Total" : "Total Size",
                     value: totalSize,
                     color: "text-[var(--accent-2)]",
                     bg: "bg-[var(--accent-2-soft)]"
                 },
                 {
                     icon: <Percent size={16} />,
-                    label: "Ahorro",
+                    label: lang === 'es' ? "Ahorro" : "Savings",
                     value: compressionRatio !== null ? `${compressionRatio.toFixed(0)}%` : "0%",
                     color: "text-[var(--danger)]",
                     bg: "bg-red-50"

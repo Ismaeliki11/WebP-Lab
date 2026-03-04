@@ -172,9 +172,9 @@ function buildOptionsFromEasy(settings: EasySettings): TransformOptions {
   return parseTransformOptions(merged);
 }
 
-function easySizeLabel(size: EasySize): string {
-  if (size === "original") return "Original";
-  return `${size}px ancho maximo`;
+function easySizeLabel(size: EasySize, lang: "es" | "en"): string {
+  if (size === "original") return lang === "es" ? "Original" : "Original";
+  return lang === 'es' ? `${size}px ancho máximo` : `${size}px max width`;
 }
 
 const TRANSLATIONS = {
@@ -205,6 +205,29 @@ const TRANSLATIONS = {
     smartCrop: "Recorte Inteligente",
     watermark: "Marca de Agua",
     rename: "Patrón de nombre",
+    working: "Trabajando...",
+    viewBatchDetail: "Ver detalle del lote",
+    clearHistory: "Limpiar historial",
+    downloadImage: "Descargar imagen",
+    downloadZip: "Descargar en ZIP",
+    singleFile: "1 solo archivo",
+    saveToFolder: "Guardar en carpeta",
+    downloadIndividually: "Descarga foto a foto",
+    downloadOptions: "Opciones de Descarga",
+    transparencyWarningTitle: "Atención: Pérdida de transparencia",
+    transparencyWarningDesc: "Has elegido JPEG, pero {count} {plural} transparencia (PNG/SVG). Tendrán un fondo sólido.",
+    isolateAllWebp: "Aislar todas en WebP",
+    hideDetails: "Ocultar detalles",
+    viewImages: "Ver imágenes...",
+    isolate: "Aislar",
+    done: "Listo",
+    skipped: "Saltado",
+    failed: "Error",
+    pipelineProgress: "Progreso de pipeline",
+    originalSize: "Original",
+    files: "archivos",
+    file: "archivo",
+    ratio: "Ratio"
   },
   en: {
     heroBadge: "WebP Lab Pro Edition",
@@ -233,6 +256,29 @@ const TRANSLATIONS = {
     smartCrop: "Smart Crop",
     watermark: "Watermark",
     rename: "Rename Pattern",
+    working: "Working...",
+    viewBatchDetail: "View batch details",
+    clearHistory: "Clear history",
+    downloadImage: "Download image",
+    downloadZip: "Download ZIP",
+    singleFile: "Single file",
+    saveToFolder: "Save to folder",
+    downloadIndividually: "Downloads individually",
+    downloadOptions: "Download Options",
+    transparencyWarningTitle: "Warning: Transparency loss",
+    transparencyWarningDesc: "You selected JPEG, but {count} image(s) contain transparency. They will have a solid background.",
+    isolateAllWebp: "Isolate all as WebP",
+    hideDetails: "Hide details",
+    viewImages: "View images...",
+    isolate: "Isolate",
+    done: "Done",
+    skipped: "Skipped",
+    failed: "Failed",
+    pipelineProgress: "Pipeline Progress",
+    originalSize: "Original",
+    files: "files",
+    file: "file",
+    ratio: "Ratio"
   }
 };
 
@@ -728,6 +774,7 @@ export default function HomeClient() {
                 </div>
                 <InfoTooltip
                   title={lang === 'es' ? "Modos de Trabajo" : "Work Modes"}
+                  lang={lang}
                   content={
                     <div className="space-y-3">
                       <p><strong>{lang === 'es' ? 'Fácil:' : 'Easy:'}</strong> {lang === 'es' ? "Te ofrece preajustes orientados a resultados reales (ej. 'Web Rápido', 'Redes Sociales') para que no tengas que preocuparte de tecnicismos." : "Provides result-oriented presets (e.g., 'Fast Web', 'Social Media') so you don't have to worry about technical details."}</p>
@@ -745,6 +792,7 @@ export default function HomeClient() {
                 queueLength={queue.length}
                 totalSize={formatBytes(totalUploadSize)}
                 compressionRatio={compressionRatio}
+                lang={lang}
               />
             </div>
           </div>
@@ -823,7 +871,7 @@ export default function HomeClient() {
                     settings={easySettings}
                     setSettings={setEasySettings}
                     outputFormats={OUTPUT_FORMATS}
-                    sizeLabel={easySizeLabel}
+                    sizeLabel={(size) => easySizeLabel(size, lang)}
                     compressionText={(level: 1 | 2 | 3) => {
                       if (level === 1) return lang === 'es' ? "Máximo ahorro" : "Max Savings";
                       if (level === 2) return lang === 'es' ? "Equilibrado" : "Balanced";
@@ -833,7 +881,7 @@ export default function HomeClient() {
                     previewOptions={{
                       format: effectiveOptions.format,
                       quality: effectiveOptions.quality,
-                      size: effectiveOptions.width || effectiveOptions.height ? `${effectiveOptions.width ?? "auto"} x ${effectiveOptions.height ?? "auto"}` : "Original"
+                      size: effectiveOptions.width || effectiveOptions.height ? `${effectiveOptions.width ?? "auto"} x ${effectiveOptions.height ?? "auto"}` : t.originalSize
                     }}
                     lang={lang}
                   />
@@ -857,16 +905,16 @@ export default function HomeClient() {
 
             {totalUploadSize > 0 && (
               <div className="mt-6">
-                <LiveImpactBadge inputBytes={totalUploadSize} estimatedOutputBytes={estimatedOutputSize} />
+                <LiveImpactBadge inputBytes={totalUploadSize} estimatedOutputBytes={estimatedOutputSize} lang={lang} />
               </div>
             )}
 
             <div className="mt-8 space-y-6 pt-6 border-t border-[var(--line)]">
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)]">
-                  <span>{lang === 'es' ? 'Progreso de pipeline' : 'Pipeline Progress'}</span>
+                  <span>{t.pipelineProgress}</span>
                   <span className={processing ? "text-[var(--accent)] animate-pulse" : ""}>
-                    {stage === 'done' ? t.ready : stage === 'idle' ? t.ready : lang === 'es' ? 'Trabajando...' : 'Working...'}
+                    {stage === 'done' ? t.ready : stage === 'idle' ? t.ready : t.working}
                   </span>
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-[var(--line)]/30 p-0.5">
@@ -890,9 +938,12 @@ export default function HomeClient() {
                       <div className="flex items-start gap-3">
                         <AlertCircle size={18} className="shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <p className="text-sm font-bold">{lang === 'es' ? 'Atención: Pérdida de transparencia' : 'Warning: Transparency loss'}</p>
+                          <p className="text-sm font-bold">{t.transparencyWarningTitle}</p>
                           <p className="text-xs font-medium opacity-90 mt-1">
-                            {lang === 'es' ? `Has elegido JPEG, pero ${transparentFilesCount} ${transparentFilesCount === 1 ? 'imagen contiene' : 'imágenes contienen'} transparencia (PNG/SVG). Tendrán un fondo sólido.` : `You selected JPEG, but ${transparentFilesCount} image(s) contain transparency. They will have a solid background.`}
+                            {lang === 'es'
+                              ? t.transparencyWarningDesc.replace("{count}", transparentFilesCount.toString()).replace("{plural}", transparentFilesCount === 1 ? 'imagen contiene' : 'imágenes contienen')
+                              : t.transparencyWarningDesc.replace("{count}", transparentFilesCount.toString())
+                            }
                           </p>
 
                           <div className="mt-4 space-y-3">
@@ -908,14 +959,14 @@ export default function HomeClient() {
                                 }}
                                 className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors whitespace-nowrap"
                               >
-                                {lang === 'es' ? 'Aislar todas en WebP' : 'Isolate all as WebP'}
+                                {t.isolateAllWebp}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setIsTransparentAlertExpanded(!isTransparentAlertExpanded)}
                                 className="rounded-full border border-amber-500/50 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-500/20 transition-colors whitespace-nowrap flex items-center gap-1"
                               >
-                                {isTransparentAlertExpanded ? (lang === 'es' ? 'Ocultar detalles' : 'Hide details') : (lang === 'es' ? 'Ver imágenes...' : 'View images...')}
+                                {isTransparentAlertExpanded ? t.hideDetails : t.viewImages}
                               </button>
                             </div>
 
@@ -943,7 +994,7 @@ export default function HomeClient() {
                                           }}
                                           className="shrink-0 rounded bg-amber-500/20 px-2 py-1 text-[10px] font-bold text-amber-700 hover:bg-amber-500 hover:text-white transition-colors"
                                         >
-                                          {lang === 'es' ? 'Aislar' : 'Isolate'}
+                                          {t.isolate}
                                         </button>
                                       </div>
                                     ))}
@@ -968,7 +1019,7 @@ export default function HomeClient() {
                     >
                       <div className="flex items-center gap-3">
                         <Download size={18} />
-                        {lang === 'es' ? 'Descargar imagen' : 'Download image'}
+                        {t.downloadImage}
                       </div>
                     </motion.button>
                   ) : (
@@ -981,8 +1032,8 @@ export default function HomeClient() {
                           onClick={() => processImages('zip')}
                           className="relative flex h-14 w-full flex-col leading-tight items-center justify-center overflow-hidden rounded-2xl bg-[var(--ink-0)] text-sm font-bold text-white shadow-xl shadow-black/10 transition-all hover:bg-[var(--ink-soft)]"
                         >
-                          <span className="flex items-center gap-2 text-sm"><Download size={14} /> {lang === 'es' ? 'Descargar en ZIP' : 'Download ZIP'}</span>
-                          <span className="text-[10px] opacity-70 font-normal mt-0.5">{lang === 'es' ? '1 solo archivo' : 'Single file'}</span>
+                          <span className="flex items-center gap-2 text-sm"><Download size={14} /> {t.downloadZip}</span>
+                          <span className="text-[10px] opacity-70 font-normal mt-0.5">{t.singleFile}</span>
                         </motion.button>
 
                         {(typeof window !== 'undefined' && 'showDirectoryPicker' in window) && (
@@ -993,21 +1044,22 @@ export default function HomeClient() {
                             onClick={() => processImages('folder')}
                             className="relative flex h-14 w-full flex-col leading-tight items-center justify-center overflow-hidden rounded-2xl bg-[var(--accent)] text-sm font-bold text-white shadow-xl shadow-[var(--accent)]/20 transition-all hover:bg-[var(--accent-2)]"
                           >
-                            <span className="flex items-center gap-2 text-sm"><Save size={14} /> {lang === 'es' ? 'Guardar en carpeta' : 'Save to folder'}</span>
-                            <span className="text-[10px] opacity-90 font-normal mt-0.5">{lang === 'es' ? 'Descarga foto a foto' : 'Downloads individually'}</span>
+                            <span className="flex items-center gap-2 text-sm"><Save size={14} /> {t.saveToFolder}</span>
+                            <span className="text-[10px] opacity-90 font-normal mt-0.5">{t.downloadIndividually}</span>
                           </motion.button>
                         )}
                       </div>
                       <InfoTooltip
-                        title={lang === 'es' ? "Opciones de Descarga" : "Download Options"}
+                        title={t.downloadOptions}
+                        lang={lang}
                         content={
                           <div className="space-y-4">
                             <div>
-                              <h4 className="font-bold flex items-center gap-2 mb-1"><Download size={14} /> {lang === 'es' ? 'Descargar en ZIP' : 'Download ZIP'}</h4>
+                              <h4 className="font-bold flex items-center gap-2 mb-1"><Download size={14} /> {t.downloadZip}</h4>
                               <p className="text-[var(--ink-soft)]">{lang === 'es' ? "Procesa todas las fotos en memoria temporal y descarga un único archivo" : "Processes all photos in temporary memory and downloads a single"} <code>.zip</code> {lang === 'es' ? "archivo. " : "file. "}<strong className="text-amber-600">{lang === 'es' ? "Recomendado solo para grupos pequeños" : "Recommended ONLY for small batches"}</strong>{lang === 'es' ? ", ya que lotes inmensos pueden colapsar el navegador por falta de RAM al tener que retenerlas juntas para empaquetarlas." : ", as massive batches can crash the browser due to lack of RAM when holding them together to pack."}</p>
                             </div>
                             <div>
-                              <h4 className="font-bold flex items-center gap-2 mb-1 text-[var(--accent)]"><Save size={14} /> {lang === 'es' ? 'Guardar en carpeta' : 'Save to folder'}</h4>
+                              <h4 className="font-bold flex items-center gap-2 mb-1 text-[var(--accent)]"><Save size={14} /> {t.saveToFolder}</h4>
                               <p className="text-[var(--ink-soft)]">{lang === 'es' ? "Te pedirá permisos para acceder a una carpeta de tu ordenador. Irá codificando la imagen y" : "Will ask for permission to access a folder on your computer. It encodes the image and"} <strong>{lang === 'es' ? "escribiéndola directamente en tu disco duro" : "writes it directly to your hard drive"}</strong>{lang === 'es' ? ", liberando la memoria y pasando a la siguiente. ¡La opción más segura, fiable e infinita para cientos de fotos gigantes!" : ", freeing memory and moving to the next one. The safest, most reliable, and infinite option for hundreds of giant photos!"}</p>
                             </div>
                           </div>
@@ -1060,7 +1112,7 @@ export default function HomeClient() {
                       <details className="mt-2 text-xs group">
                         <summary className="cursor-pointer font-bold text-[var(--ink-light)] hover:text-[var(--ink-soft)] transition border-t border-[var(--accent-2)]/20 pt-3 flex items-center gap-1 list-none outline-none">
                           <ChevronRight size={14} className="group-open:rotate-90 transition-transform" />
-                          {lang === 'es' ? 'Ver detalle del lote' : 'View batch details'}
+                          {t.viewBatchDetail}
                         </summary>
                         <div className="mt-3 flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-2 pb-1">
                           {queue.map(q => (
@@ -1069,9 +1121,9 @@ export default function HomeClient() {
                                 <img src={q.previewUrl} className="w-6 h-6 rounded-md object-cover bg-black/5 shrink-0" alt="" />
                                 <span className="truncate font-semibold text-[var(--ink-soft)]" title={q.file.name}>{q.file.name}</span>
                               </div>
-                              {q.status === 'done' && <span className="text-emerald-700 font-bold px-2 py-0.5 bg-emerald-500/15 rounded uppercase text-[9px] whitespace-nowrap">{lang === 'es' ? 'Listo' : 'Done'}</span>}
-                              {q.status === 'skipped' && <span className="text-amber-700 font-bold px-2 py-0.5 bg-amber-500/15 rounded uppercase text-[9px] whitespace-nowrap">{lang === 'es' ? 'Saltado' : 'Skipped'}</span>}
-                              {q.status === 'error' && <span className="text-red-700 font-bold px-2 py-0.5 bg-red-500/15 rounded uppercase text-[9px] whitespace-nowrap">{lang === 'es' ? 'Error' : 'Failed'}</span>}
+                              {q.status === 'done' && <span className="text-emerald-700 font-bold px-2 py-0.5 bg-emerald-500/15 rounded uppercase text-[9px] whitespace-nowrap">{t.done}</span>}
+                              {q.status === 'skipped' && <span className="text-amber-700 font-bold px-2 py-0.5 bg-amber-500/15 rounded uppercase text-[9px] whitespace-nowrap">{t.skipped}</span>}
+                              {q.status === 'error' && <span className="text-red-700 font-bold px-2 py-0.5 bg-red-500/15 rounded uppercase text-[9px] whitespace-nowrap">{t.failed}</span>}
                             </div>
                           ))}
                         </div>
@@ -1094,7 +1146,7 @@ export default function HomeClient() {
               onClick={() => setHistory([])}
               className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)] hover:text-[var(--danger)] transition-colors"
             >
-              {lang === 'es' ? 'Limpiar historial' : 'Clear history'}
+              {t.clearHistory}
             </button>
           </div>
 
@@ -1115,10 +1167,10 @@ export default function HomeClient() {
                   </span>
                 </div>
                 <p className="font-bold text-sm truncate mb-1">{item.fileName}</p>
-                <p className="text-[10px] text-[var(--ink-soft)] mb-4">{item.filesCount} {lang === 'es' ? 'archivos' : 'files'}</p>
+                <p className="text-[10px] text-[var(--ink-soft)] mb-4">{item.filesCount} {item.filesCount === 1 ? t.file : t.files}</p>
                 <div className="flex items-center justify-between pt-4 border-t border-[var(--line)]">
                   <div>
-                    <p className="text-[9px] uppercase tracking-widest text-[var(--ink-soft)] font-bold mb-0.5">Ratio</p>
+                    <p className="text-[9px] uppercase tracking-widest text-[var(--ink-soft)] font-bold mb-0.5">{t.ratio}</p>
                     <p className="text-xs font-bold text-[var(--accent-2)]">
                       -{Math.round(100 - (item.totalOutputSize / item.totalInputSize) * 100)}%
                     </p>

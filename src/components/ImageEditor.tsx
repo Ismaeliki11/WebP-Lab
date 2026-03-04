@@ -287,7 +287,7 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                     <SlidersHorizontal size={20} className="text-[var(--accent)]" />
                                     {lang === 'es' ? 'Ajustes de Imagen' : 'Image Settings'}
                                 </h2>
-                                <InfoTooltip
+                                <InfoTooltip lang={lang}
                                     title={lang === 'es' ? "Ajustes Individuales" : "Individual Settings"}
                                     content={
                                         <div className="space-y-3">
@@ -358,9 +358,19 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <label className="block">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] mb-2 flex items-center gap-1.5">
-                                                {lang === 'es' ? "Ancho" : "Width"} <span className="text-[8px] opacity-70 normal-case">(px)</span>
-                                            </span>
+                                            <div className="flex justify-between items-center mb-1.5">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] flex items-center gap-1.5">
+                                                    {lang === 'es' ? "Ancho" : "Width"}
+                                                    <div className="relative group/tt flex items-center">
+                                                        <Info size={12} className="text-[var(--ink-light)] group-hover/tt:text-[var(--accent)] cursor-help transition-colors" />
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] pointer-events-none opacity-0 group-hover/tt:opacity-100 transition-all translate-y-1 group-hover/tt:translate-y-0 z-50 bg-[var(--ink-0)] text-white text-[10px] font-medium px-3 py-2 rounded-xl shadow-xl text-center leading-tight normal-case tracking-normal">
+                                                            {lang === 'es' ? "Si lo dejas vacío, se mantendrá el ancho original de la imagen." : "If left empty, the original image width will be kept."}
+                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-[var(--ink-0)]" />
+                                                        </div>
+                                                    </div>
+                                                </span>
+                                                <span className="text-[8px] font-bold text-[var(--ink-light)]">px</span>
+                                            </div>
                                             <input
                                                 type="number"
                                                 min={1}
@@ -371,9 +381,19 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                             />
                                         </label>
                                         <label className="block">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] mb-2 flex items-center gap-1.5">
-                                                {lang === 'es' ? "Alto" : "Height"} <span className="text-[8px] opacity-70 normal-case">(px)</span>
-                                            </span>
+                                            <div className="flex justify-between items-center mb-1.5">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] flex items-center gap-1.5">
+                                                    {lang === 'es' ? "Alto" : "Height"}
+                                                    <div className="relative group/tt flex items-center">
+                                                        <Info size={12} className="text-[var(--ink-light)] group-hover/tt:text-[var(--accent)] cursor-help transition-colors" />
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] pointer-events-none opacity-0 group-hover/tt:opacity-100 transition-all translate-y-1 group-hover/tt:translate-y-0 z-50 bg-[var(--ink-0)] text-white text-[10px] font-medium px-3 py-2 rounded-xl shadow-xl text-center leading-tight normal-case tracking-normal">
+                                                            {lang === 'es' ? "Si lo dejas vacío, se mantendrá el alto original de la imagen." : "If left empty, the original image height will be kept."}
+                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-[var(--ink-0)]" />
+                                                        </div>
+                                                    </div>
+                                                </span>
+                                                <span className="text-[8px] font-bold text-[var(--ink-light)]">px</span>
+                                            </div>
                                             <input
                                                 type="number"
                                                 min={1}
@@ -389,6 +409,20 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                         <label className="block">
                                             <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] mb-2 flex items-center gap-1.5">
                                                 {lang === 'es' ? "Modo de Ajuste" : "Fit Mode"}
+                                                <InfoTooltip lang={lang}
+                                                    title={lang === 'es' ? "Modos de Ajuste (Crop)" : "Fit Modes (Crop)"}
+                                                    content={
+                                                        <div className="space-y-2">
+                                                            <p>{lang === 'es' ? "Determina qué hace el programa si la foto original tiene distinta proporción que el Alto y Ancho pedidos." : "Determines what the program does if the original photo has a different aspect ratio than the requested Height and Width."}</p>
+                                                            <ul className="list-disc pl-5 space-y-1 text-[var(--ink-soft)] flex flex-col gap-1">
+                                                                <li><strong>Cover:</strong> {lang === 'es' ? "Llena todo el espacio y recorta lo sobrante." : "Fills entire space and crops extra."}</li>
+                                                                <li><strong>Contain:</strong> {lang === 'es' ? "Bandas vacías pero sin recortar." : "Empty bands but no cropping."}</li>
+                                                                <li><strong>Fill:</strong> {lang === 'es' ? "Estira y deforma la imagen." : "Stretches and distorts image."}</li>
+                                                                <li><strong>Inside:</strong> {lang === 'es' ? "Encaja sin recortar ni estirar." : "Fits without cropping or stretching."}</li>
+                                                            </ul>
+                                                        </div>
+                                                    }
+                                                />
                                             </span>
                                             <div className="relative">
                                                 <select
@@ -422,27 +456,80 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                         </label>
                                     </div>
 
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className="block">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] mb-1.5 block">
+                                                {lang === 'es' ? "Desenfoque" : "Blur"}
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="range" min="0" max="20" step="0.5"
+                                                    value={localOptions.blur}
+                                                    onChange={(e) => setLocalOptions(prev => ({ ...prev, blur: Number(e.target.value) }))}
+                                                    className="flex-1 h-1.5 rounded-full bg-[var(--line)] accent-[var(--accent)] appearance-none cursor-pointer"
+                                                />
+                                                <span className="text-[10px] font-mono font-bold text-[var(--accent)] w-8 text-right">{localOptions.blur}</span>
+                                            </div>
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] mb-1.5 block">
+                                                {lang === 'es' ? "Fondo (hex)" : "Background (hex)"}
+                                            </span>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder="#ffffff"
+                                                    value={localOptions.background ?? ""}
+                                                    onChange={(e) => setLocalOptions(prev => ({ ...prev, background: e.target.value || null }))}
+                                                    className="w-full rounded-xl border border-[var(--line)] bg-white pl-8 pr-3 py-2 text-xs font-mono shadow-sm outline-none focus:border-[var(--accent)]"
+                                                />
+                                                <div
+                                                    className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 rounded-full border border-[var(--line)]"
+                                                    style={{ backgroundColor: localOptions.background || '#ffffff' }}
+                                                />
+                                            </div>
+                                        </label>
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-3">
                                         {[
                                             {
-                                                key: "stripMetadata", label: lang === 'es' ? "No meta" : "No Meta", tooltip: lang === 'es' ? (
-                                                    <div className="space-y-1">
-                                                        <p>Elimina todos los "datos extra ocultos" (GPS, Cámara).</p>
+                                                key: "stripMetadata", label: lang === 'es' ? "No meta" : "No Meta", tooltipNative: true, tooltip: lang === 'es' ? (
+                                                    <div className="space-y-2">
+                                                        <p>Elimina todos los "datos extra ocultos" (metadatos) que vienen incrustados dentro de la fotografía original, como por ejemplo:</p>
+                                                        <ul className="list-disc pl-5 space-y-1">
+                                                            <li>Coordenadas GPS de dónde tomaste la foto.</li>
+                                                            <li>Datos técnicos de la cámara (Modelo, Exposición, ISO).</li>
+                                                            <li>Perfiles de color profundos (Útiles solo en imprentas).</li>
+                                                        </ul>
+                                                        <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10"><strong>Recomendación:</strong> Mantenlo marcado para subir imágenes a internet. Ahorrarás mucho peso de archivo inútil y protegerás la privacidad de tu ubicación donde tomaste la foto.</InfoNote>
                                                     </div>
                                                 ) : (
-                                                    <div className="space-y-1">
-                                                        <p>Removes all "hidden extra data" (GPS, Camera).</p>
+                                                    <div className="space-y-2">
+                                                        <p>Removes all "hidden extra data" (metadata) embedded within the original photograph, such as:</p>
+                                                        <ul className="list-disc pl-5 space-y-1">
+                                                            <li>GPS coordinates of where you took the photo.</li>
+                                                            <li>Technical camera data (Model, Exposure, ISO).</li>
+                                                            <li>Deep color profiles (Only useful in print shops).</li>
+                                                        </ul>
+                                                        <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10"><strong>Recommendation:</strong> Keep this checked for uploading images to the internet. You'll save a lot of useless file size and protect the privacy of your location.</InfoNote>
                                                     </div>
                                                 )
                                             },
                                             {
-                                                key: "lossless", label: "Lossless", tooltip: lang === 'es' ? (
-                                                    <div className="space-y-1">
-                                                        <p>Calidad al 100% garantizada. Archivo final más pesado.</p>
+                                                key: "lossless", label: "Lossless", tooltipNative: true, tooltip: lang === 'es' ? (
+                                                    <div className="space-y-2">
+                                                        <p>Consiste en una compresión puramente matemática en la que <strong>no se elimina ni un solo píxel, ni un solo color, ni un solo detalle</strong> de la imagen de origen. Es idéntica al 100%.</p>
+                                                        <p>Funciona de manera parecida a meter archivos en un ".zip".</p>
+                                                        <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10">Se garantiza la calidad absoluta y perfecta a costa de que <strong>el tamaño en megas del archivo final sea muchísimo más pesado</strong>. Si activas esto, perderás todas las ventajas de reducir tamaño para páginas web.</InfoNote>
+                                                        <p className="text-xs opacity-70 mt-2">P.D. Solo soporta formatos de salida modernos como WebP, AVIF o PNG.</p>
                                                     </div>
                                                 ) : (
-                                                    <div className="space-y-1">
-                                                        <p>100% quality guaranteed. Heavier final file size.</p>
+                                                    <div className="space-y-2">
+                                                        <p>Consists of a purely mathematical compression where <strong>not a single pixel, color, or detail is removed</strong> from the source image. It is 100% identical.</p>
+                                                        <p>It works similarly to putting files in a ".zip".</p>
+                                                        <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10">Absolute and perfect quality is guaranteed at the cost of <strong>the final file size in megabytes being remarkably heavier</strong>. Activating this negates all advantages of reducing file size for websites.</InfoNote>
+                                                        <p className="text-xs opacity-70 mt-2">P.S. Only supports modern output formats like WebP, AVIF or PNG.</p>
                                                     </div>
                                                 )
                                             },
@@ -464,9 +551,40 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                                 </div>
                                                 {opt.tooltip && (
                                                     <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                                                        <InfoTooltip title={opt.label} content={opt.tooltip as React.ReactNode} />
+                                                        <InfoTooltip lang={lang} title={opt.label} content={opt.tooltip as React.ReactNode} />
                                                     </div>
                                                 )}
+                                            </label>
+                                        ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { key: 'flop', label: 'Flip H', icon: <FlipHorizontal size={14} />, tooltip: lang === 'es' ? 'Efecto espejo.' : 'Horizontal mirror.' },
+                                            { key: 'flip', label: 'Flip V', icon: <FlipVertical size={14} />, tooltip: lang === 'es' ? 'Voltea boca abajo.' : 'Flips upside down.' },
+                                        ].map(eff => (
+                                            <label
+                                                key={eff.key}
+                                                className={`flex justify-between items-center gap-2 rounded-xl border px-3 py-2 cursor-pointer transition-all ${localOptions[eff.key as keyof TransformOptions] ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--line)] bg-white'}`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={Boolean(localOptions[eff.key as keyof TransformOptions])}
+                                                        onChange={() => setLocalOptions(prev => ({ ...prev, [eff.key]: !prev[eff.key as keyof TransformOptions] }))}
+                                                        className="h-3 w-3 accent-[var(--accent)]"
+                                                    />
+                                                    <span className="text-[9px] font-bold text-[var(--ink-soft)] uppercase tracking-tight">
+                                                        {eff.label}
+                                                    </span>
+                                                </div>
+                                                <div className="relative group/tt flex items-center">
+                                                    <Info size={12} className="text-[var(--ink-light)] group-hover/tt:text-[var(--accent)] cursor-help transition-colors" />
+                                                    <div className="absolute bottom-full right-0 mb-2 w-max max-w-[140px] pointer-events-none opacity-0 group-hover/tt:opacity-100 transition-all translate-y-1 group-hover/tt:translate-y-0 z-50 bg-[var(--ink-0)] text-white text-[10px] font-medium px-3 py-2 rounded-xl shadow-xl text-center leading-tight normal-case tracking-normal">
+                                                        {eff.tooltip}
+                                                        <div className="absolute top-full right-1.5 border-[4px] border-transparent border-t-[var(--ink-0)]" />
+                                                    </div>
+                                                </div>
                                             </label>
                                         ))}
                                     </div>
@@ -476,15 +594,23 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                             {activeTab === 'color' && (
                                 <div className="space-y-6">
                                     {[
-                                        { key: 'brightness', label: lang === 'es' ? 'Brillo' : 'Brightness', icon: <Sun size={14} />, min: 0.1, max: 2, step: 0.01, default: 1 },
-                                        { key: 'contrast', label: lang === 'es' ? 'Contraste' : 'Contrast', icon: <Contrast size={14} />, min: 0.1, max: 2, step: 0.01, default: 1 },
-                                        { key: 'saturation', label: lang === 'es' ? 'Saturación' : 'Saturation', icon: <Droplets size={14} />, min: 0, max: 3, step: 0.1, default: 1 },
-                                        { key: 'hue', label: lang === 'es' ? 'Tono (Hue)' : 'Hue', icon: <Palette size={14} />, min: 0, max: 360, step: 1, default: 0 },
+                                        { key: 'brightness', label: lang === 'es' ? 'Brillo' : 'Brightness', tooltip: lang === 'es' ? 'Ajusta la luminosidad general.' : 'Adjusts the overall lightness.', icon: <Sun size={14} />, min: 0.1, max: 2, step: 0.01, default: 1 },
+                                        { key: 'contrast', label: lang === 'es' ? 'Contraste' : 'Contrast', tooltip: lang === 'es' ? 'Aumenta o disminuye la diferencia de tonos.' : 'Increases or decreases tonal difference.', icon: <Contrast size={14} />, min: 0.1, max: 2, step: 0.01, default: 1 },
+                                        { key: 'saturation', label: lang === 'es' ? 'Saturación' : 'Saturation', tooltip: lang === 'es' ? 'Controla la viveza de los colores.' : 'Controls the vividness of colors.', icon: <Droplets size={14} />, min: 0, max: 3, step: 0.1, default: 1 },
+                                        { key: 'gamma', label: 'Gamma', tooltip: lang === 'es' ? 'Altera tonos medios sin quemar blancos.' : 'Alters midtones without blowing out whites.', icon: <Sparkles size={14} />, min: 1, max: 3, step: 0.1, default: 2.2 },
+                                        { key: 'hue', label: lang === 'es' ? 'Tono (Hue)' : 'Hue', tooltip: lang === 'es' ? 'Rota el espectro de color completo.' : 'Rotates the full color spectrum.', icon: <Palette size={14} />, min: 0, max: 360, step: 1, default: 0 },
                                     ].map(item => (
                                         <div key={item.key} className="space-y-4">
                                             <div className="flex justify-between items-center">
                                                 <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] flex items-center gap-2">
                                                     {item.icon} {item.label}
+                                                    <div className="relative group/tt flex items-center">
+                                                        <Info size={12} className="text-[var(--ink-light)] group-hover/tt:text-[var(--accent)] cursor-help transition-colors" />
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[160px] pointer-events-none opacity-0 group-hover/tt:opacity-100 transition-all translate-y-1 group-hover/tt:translate-y-0 z-50 bg-[var(--ink-0)] text-white text-[10px] font-medium px-3 py-2 rounded-xl shadow-xl text-center leading-tight normal-case tracking-normal">
+                                                            {item.tooltip}
+                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-[var(--ink-0)]" />
+                                                        </div>
+                                                    </div>
                                                 </label>
                                                 <div className="flex items-center gap-2">
                                                     <button
@@ -516,43 +642,36 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
 
                             {activeTab === 'efectos' && (
                                 <div className="space-y-6">
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] flex items-center gap-2">
-                                                <Maximize size={14} /> {lang === 'es' ? 'Desenfoque' : 'Blur'}
-                                            </label>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => setLocalOptions(prev => ({ ...prev, blur: 0 }))}
-                                                    className="p-1 text-[var(--ink-soft)] hover:text-[var(--accent)] transition-colors"
-                                                >
-                                                    <RotateCw size={10} />
-                                                </button>
-                                                <span className="text-[10px] font-mono font-bold text-[var(--accent)]">{localOptions.blur}px</span>
-                                            </div>
-                                        </div>
-                                        <input
-                                            type="range" min="0" max="20" step="0.5"
-                                            value={localOptions.blur}
-                                            onChange={(e) => setLocalOptions(prev => ({ ...prev, blur: Number(e.target.value) }))}
-                                            className="w-full"
-                                        />
-                                    </div>
 
                                     <div className="grid grid-cols-2 gap-3">
                                         {[
-                                            { key: 'grayscale', label: lang === 'es' ? 'B/N' : 'B/W', icon: <Eraser size={16} /> },
-                                            { key: 'sepia', label: 'Sepia', icon: <Palette size={16} /> },
-                                            { key: 'sharpen', label: lang === 'es' ? 'Enfoque' : 'Sharpen', icon: <Wind size={16} /> },
+                                            { key: 'grayscale', label: lang === 'es' ? 'B/N' : 'B/W', icon: <Eraser size={16} />, tooltip: lang === 'es' ? 'Convierte a blanco y negro.' : 'Converts to black and white.' },
+                                            { key: 'sepia', label: 'Sepia', icon: <Palette size={16} />, tooltip: lang === 'es' ? 'Tono vintage amarillento.' : 'Vintage yellowish tone.' },
+                                            { key: 'sharpen', label: lang === 'es' ? 'Enfoque' : 'Sharpen', icon: <Wind size={16} />, tooltip: lang === 'es' ? 'Mejora bordes y nitidez.' : 'Enhances edges and sharpness.' },
                                         ].map(eff => (
-                                            <button
+                                            <label
                                                 key={eff.key}
-                                                onClick={() => setLocalOptions(prev => ({ ...prev, [eff.key]: !prev[eff.key as keyof TransformOptions] }))}
-                                                className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition-all ${localOptions[eff.key as keyof TransformOptions] ? 'bg-[var(--accent)] text-white border-transparent shadow-[0_4px_12px_rgba(20,111,214,0.3)]' : 'bg-white text-[var(--ink-0)] border-[var(--line)] hover:border-[var(--accent)]'}`}
+                                                className={`flex justify-between items-center gap-2 rounded-xl border px-3 py-2 cursor-pointer transition-all ${localOptions[eff.key as keyof TransformOptions] ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--line)] bg-white'}`}
                                             >
-                                                {eff.icon}
-                                                <span className="text-[8px] font-bold uppercase tracking-widest">{eff.label}</span>
-                                            </button>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={Boolean(localOptions[eff.key as keyof TransformOptions])}
+                                                        onChange={() => setLocalOptions(prev => ({ ...prev, [eff.key]: !prev[eff.key as keyof TransformOptions] }))}
+                                                        className="h-3 w-3 accent-[var(--accent)]"
+                                                    />
+                                                    <span className="text-[9px] font-bold text-[var(--ink-soft)] uppercase tracking-tight">
+                                                        {eff.label}
+                                                    </span>
+                                                </div>
+                                                <div className="relative group/tt flex items-center">
+                                                    <Info size={12} className="text-[var(--ink-light)] group-hover/tt:text-[var(--accent)] cursor-help transition-colors" />
+                                                    <div className="absolute bottom-full right-0 mb-2 w-max max-w-[140px] pointer-events-none opacity-0 group-hover/tt:opacity-100 transition-all translate-y-1 group-hover/tt:translate-y-0 z-50 bg-[var(--ink-0)] text-white text-[10px] font-medium px-3 py-2 rounded-xl shadow-xl text-center leading-tight normal-case tracking-normal">
+                                                        {eff.tooltip}
+                                                        <div className="absolute top-full right-1.5 border-[4px] border-transparent border-t-[var(--ink-0)]" />
+                                                    </div>
+                                                </div>
+                                            </label>
                                         ))}
                                     </div>
                                 </div>
@@ -583,15 +702,15 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                         <div className="flex items-center justify-between">
                                             <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] flex items-center gap-1.5">
                                                 Smart Crop (Entropy)
-                                                <InfoTooltip
+                                                <InfoTooltip lang={lang}
                                                     title="Smart Crop"
                                                     content={lang === 'es' ? (
-                                                        <div>
+                                                        <div className="space-y-2">
                                                             <p>Si fuerzas un Alto/Ancho que recorta la foto, el sistema identificará de forma inteligente el punto de mayor interés visual para centrar el recorte ahí.</p>
                                                             <InfoNote>Este ajuste se aplica únicamente al procesar y descargar la imagen final.</InfoNote>
                                                         </div>
                                                     ) : (
-                                                        <div>
+                                                        <div className="space-y-2">
                                                             <p>If you force a Height/Width that crops the photo, the system will intelligently identify the point of maximum visual interest to center the crop there.</p>
                                                             <InfoNote>This setting is applied only upon processing and downloading the final image.</InfoNote>
                                                         </div>
@@ -606,7 +725,7 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                             </button>
                                         </div>
                                         <p className="text-[9px] text-[var(--ink-soft)] italic leading-relaxed">
-                                            {lang === 'es' ? 'Recorte automático basado en el punto de interés visual.' : 'Automatic cropping based on visual interest.'}
+                                            {lang === 'es' ? 'Recorte inteligente basado en inteligencia artificial de Sharp.' : 'AI-powered smart cropping via Sharp.'}
                                         </p>
                                     </div>
 
@@ -618,7 +737,7 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                                 </div>
                                                 {lang === 'es' ? "Marca de Agua" : "Watermark"}
                                             </h4>
-                                            <InfoTooltip
+                                            <InfoTooltip lang={lang}
                                                 title={lang === 'es' ? "Marca de Agua" : "Watermark"}
                                                 content={
                                                     <div className="space-y-3">
@@ -747,7 +866,7 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                                         <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--ink-0)] leading-none flex items-center gap-1">
                                                             {lang === 'es' ? "Inyectar Metadatos" : "Embed Metadata"}
                                                             <div className="scale-75 -translate-y-0.5">
-                                                                <InfoTooltip
+                                                                <InfoTooltip lang={lang}
                                                                     title={lang === 'es' ? "Protección Legal" : "Legal Protection"}
                                                                     content={lang === 'es' ?
                                                                         "Escribe tu firma en el Copyright interno del archivo. Esto ayuda a demostrar la autoría incluso si la imagen es manipulada." :
@@ -777,7 +896,7 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                                 <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] leading-none">
                                                     {lang === 'es' ? 'Nombre del Archivo' : 'Filename Pattern'}
                                                 </label>
-                                                <InfoTooltip
+                                                <InfoTooltip lang={lang}
                                                     title={lang === 'es' ? "Optimización SEO" : "SEO Optimization"}
                                                     content={
                                                         <div className="space-y-4">
@@ -896,7 +1015,7 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                                         <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--ink-0)] leading-none flex items-center gap-1.5">
                                                             {lang === 'es' ? "Limpieza SEO" : "SEO Cleaning"}
                                                             <div className="scale-75 -translate-y-0.5">
-                                                                <InfoTooltip
+                                                                <InfoTooltip lang={lang}
                                                                     title={lang === 'es' ? "Nombres Web" : "Web Naming"}
                                                                     content={lang === 'es' ?
                                                                         "Elimina espacios y acentos del nombre para evitar errores al subir la imagen a tu web o redes sociales." :

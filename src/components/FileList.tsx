@@ -147,6 +147,7 @@ export function FileList({
 
                                     {isHighRisk(item) && (
                                         <InfoTooltip
+                                            lang={lang}
                                             title={lang === 'es' ? "Alto Riesgo Visual ⚠️" : "High Visual Risk ⚠️"}
                                             content={
                                                 <div className="space-y-2">
@@ -234,6 +235,7 @@ export function FileList({
                                         const changedKeys = Object.keys(item.customOverrides) as (keyof TransformOptions)[];
                                         return (
                                             <InfoTooltip
+                                                lang={lang}
                                                 title={lang === 'es' ? "Ajustes Personalizados" : "Custom Settings"}
                                                 content={
                                                     <div className="space-y-3">
