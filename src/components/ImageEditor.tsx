@@ -24,9 +24,10 @@ import {
     ZoomOut,
     Type,
     Scissors,
-    FileText
+    FileText,
+    Info
 } from "lucide-react";
-import { TransformOptions, OutputFormat } from "@/lib/image-tools";
+import { TransformOptions, OutputFormat, RESIZE_FITS } from "@/lib/image-tools";
 import { InfoTooltip, InfoNote } from "./InfoTooltip";
 
 interface ImageEditorProps {
@@ -49,13 +50,13 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
     useEffect(() => {
         if (isOpen) {
             setLocalOptions({ ...options, ...itemOverrides });
-            setActiveTab("ajustes");
+            setActiveTab("general");
             setIsViewingOriginal(false);
             setZoom(1);
         }
     }, [isOpen, options, itemOverrides]);
 
-    const [activeTab, setActiveTab] = useState<"ajustes" | "color" | "efectos" | "avanzado">("ajustes");
+    const [activeTab, setActiveTab] = useState<"general" | "color" | "efectos" | "avanzado">("general");
     const [sliderPos, setSliderPos] = useState(50);
     const [estimations, setEstimations] = useState<Record<string, number>>({});
     const [isEstimating, setIsEstimating] = useState(false);
@@ -306,8 +307,8 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
 
                         <nav className="shrink-0 flex border-b border-[var(--line)] px-2">
                             {[
-                                { id: 'ajustes', label: lang === 'es' ? 'Luz' : 'Light', icon: <Sun size={14} /> },
-                                { id: 'color', label: 'Color', icon: <Droplets size={14} /> },
+                                { id: 'general', label: lang === 'es' ? 'General' : 'General', icon: <SlidersHorizontal size={14} /> },
+                                { id: 'color', label: lang === 'es' ? 'Luz & Color' : 'Light & Color', icon: <Sun size={14} /> },
                                 { id: 'efectos', label: lang === 'es' ? 'Filtros' : 'Filters', icon: <Palette size={14} /> },
                                 { id: 'avanzado', label: 'Pro', icon: <Maximize size={14} /> },
                             ].map(tab => (
@@ -324,31 +325,161 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                         </nav>
 
                         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)]">{lang === 'es' ? 'Formato & Comparativa' : 'Format & Comparison'}</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {['webp', 'avif', 'jpeg', 'png'].map((fmt) => (
-                                        <button
-                                            key={fmt}
-                                            onClick={() => setLocalOptions(prev => ({ ...prev, format: fmt as OutputFormat }))}
-                                            className={`rounded-xl border p-3 text-xs font-bold transition-all flex flex-col items-center gap-1 ${localOptions.format === fmt ? 'bg-[var(--accent)] text-white border-transparent' : 'bg-white text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--accent)]'}`}
-                                        >
-                                            {fmt.toUpperCase()}
-                                            {estimations[fmt] && (
-                                                <span className="text-[8px] opacity-70 font-mono">
-                                                    {Math.round(estimations[fmt] / 1024)} KB
-                                                </span>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                            {activeTab === 'general' && (
+                                <div className="space-y-6">
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)]">{lang === 'es' ? "Calidad" : "Quality"}</span>
+                                            <span className={`text-[10px] font-mono font-bold ${localOptions.lossless ? 'text-[var(--ink-light)]' : 'text-[var(--accent)]'}`}>
+                                                {localOptions.lossless ? (lang === 'es' ? 'IGNORADA' : 'IGNORED') : `${localOptions.quality}%`}
+                                            </span>
+                                        </div>
+                                        {localOptions.lossless && (
+                                            <div className="bg-[var(--accent)]/10 text-[var(--ink-0)] p-2.5 rounded-xl border border-[var(--accent)]/20 text-[10px] shadow-sm mt-2 mb-1">
+                                                <p className="font-bold flex items-center gap-1.5 mb-1">
+                                                    <Info size={12} className="text-[var(--accent)]" />
+                                                    {lang === 'es' ? "Ajuste ignorado" : "Setting ignored"}
+                                                </p>
+                                                <p className="opacity-90 leading-relaxed text-[9px]">
+                                                    {lang === 'es' ? "Compresión Lossless forzada al 100% de detalle." : "Lossless compression forced 100% detail."}
+                                                </p>
+                                            </div>
+                                        )}
+                                        <input
+                                            type="range"
+                                            min={1}
+                                            max={100}
+                                            disabled={localOptions.lossless}
+                                            value={localOptions.quality}
+                                            onChange={(e) => setLocalOptions(prev => ({ ...prev, quality: Number(e.target.value) }))}
+                                            className="w-full h-1.5 rounded-full bg-[var(--line)] accent-[var(--accent)] appearance-none cursor-pointer disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed transition-all"
+                                        />
+                                    </div>
 
-                            {activeTab === 'ajustes' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className="block">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] mb-2 flex items-center gap-1.5">
+                                                {lang === 'es' ? "Ancho" : "Width"} <span className="text-[8px] opacity-70 normal-case">(px)</span>
+                                            </span>
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                placeholder={lang === 'es' ? "Original" : "Original"}
+                                                value={localOptions.width || ""}
+                                                onChange={(e) => setLocalOptions(prev => ({ ...prev, width: e.target.value ? Number(e.target.value) : null }))}
+                                                className="w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-medium shadow-sm outline-none focus:border-[var(--accent)]"
+                                            />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] mb-2 flex items-center gap-1.5">
+                                                {lang === 'es' ? "Alto" : "Height"} <span className="text-[8px] opacity-70 normal-case">(px)</span>
+                                            </span>
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                placeholder={lang === 'es' ? "Original" : "Original"}
+                                                value={localOptions.height || ""}
+                                                onChange={(e) => setLocalOptions(prev => ({ ...prev, height: e.target.value ? Number(e.target.value) : null }))}
+                                                className="w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-medium shadow-sm outline-none focus:border-[var(--accent)]"
+                                            />
+                                        </label>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className="block">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] mb-2 flex items-center gap-1.5">
+                                                {lang === 'es' ? "Modo de Ajuste" : "Fit Mode"}
+                                            </span>
+                                            <div className="relative">
+                                                <select
+                                                    value={localOptions.fit}
+                                                    disabled={!localOptions.width && !localOptions.height}
+                                                    onChange={(e) => setLocalOptions(prev => ({ ...prev, fit: e.target.value as any }))}
+                                                    className="w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-medium shadow-sm outline-none focus:border-[var(--accent)] disabled:opacity-50 disabled:bg-[var(--bg-soft)] disabled:cursor-not-allowed"
+                                                >
+                                                    {RESIZE_FITS.map((fit) => (
+                                                        <option key={fit} value={fit}>{fit.charAt(0).toUpperCase() + fit.slice(1)}</option>
+                                                    ))}
+                                                </select>
+                                                {!localOptions.width && !localOptions.height && (
+                                                    <div className="absolute inset-0 z-10" title={lang === 'es' ? "Bloqueado al mantener tamaño original" : "Locked when preserving original size"} />
+                                                )}
+                                            </div>
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] mb-2 flex items-center gap-1.5">
+                                                {lang === 'es' ? "Rotación" : "Rotation"}
+                                            </span>
+                                            <select
+                                                value={localOptions.rotate}
+                                                onChange={(e) => setLocalOptions(prev => ({ ...prev, rotate: Number(e.target.value) }))}
+                                                className="w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-medium shadow-sm outline-none focus:border-[var(--accent)]"
+                                            >
+                                                {[0, 90, 180, 270].map(deg => (
+                                                    <option key={deg} value={deg}>{deg}° {lang === 'es' ? "grados" : "degrees"}</option>
+                                                ))}
+                                            </select>
+                                        </label>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            {
+                                                key: "stripMetadata", label: lang === 'es' ? "No meta" : "No Meta", tooltip: lang === 'es' ? (
+                                                    <div className="space-y-1">
+                                                        <p>Elimina todos los "datos extra ocultos" (GPS, Cámara).</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1">
+                                                        <p>Removes all "hidden extra data" (GPS, Camera).</p>
+                                                    </div>
+                                                )
+                                            },
+                                            {
+                                                key: "lossless", label: "Lossless", tooltip: lang === 'es' ? (
+                                                    <div className="space-y-1">
+                                                        <p>Calidad al 100% garantizada. Archivo final más pesado.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1">
+                                                        <p>100% quality guaranteed. Heavier final file size.</p>
+                                                    </div>
+                                                )
+                                            },
+                                        ].map((opt) => (
+                                            <label
+                                                key={opt.key}
+                                                className={`flex justify-between items-center gap-2 rounded-xl border px-3 py-2 shadow-sm cursor-pointer transition-all ${localOptions[opt.key as keyof TransformOptions] ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--line)] bg-white hover:border-[var(--accent)]'}`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={Boolean(localOptions[opt.key as keyof TransformOptions])}
+                                                        onChange={(e) => setLocalOptions(prev => ({ ...prev, [opt.key]: e.target.checked }))}
+                                                        className="h-3 w-3 accent-[var(--accent)] cursor-pointer"
+                                                    />
+                                                    <span className="text-[9px] font-bold text-[var(--ink-soft)] uppercase tracking-tight">
+                                                        {opt.label}
+                                                    </span>
+                                                </div>
+                                                {opt.tooltip && (
+                                                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                                                        <InfoTooltip title={opt.label} content={opt.tooltip as React.ReactNode} />
+                                                    </div>
+                                                )}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'color' && (
                                 <div className="space-y-6">
                                     {[
                                         { key: 'brightness', label: lang === 'es' ? 'Brillo' : 'Brightness', icon: <Sun size={14} />, min: 0.1, max: 2, step: 0.01, default: 1 },
                                         { key: 'contrast', label: lang === 'es' ? 'Contraste' : 'Contrast', icon: <Contrast size={14} />, min: 0.1, max: 2, step: 0.01, default: 1 },
+                                        { key: 'saturation', label: lang === 'es' ? 'Saturación' : 'Saturation', icon: <Droplets size={14} />, min: 0, max: 3, step: 0.1, default: 1 },
+                                        { key: 'hue', label: lang === 'es' ? 'Tono (Hue)' : 'Hue', icon: <Palette size={14} />, min: 0, max: 360, step: 1, default: 0 },
                                     ].map(item => (
                                         <div key={item.key} className="space-y-4">
                                             <div className="flex justify-between items-center">
@@ -376,45 +507,7 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                                 type="range" min={item.min} max={item.max} step={item.step}
                                                 value={localOptions[item.key as keyof TransformOptions] as number}
                                                 onChange={(e) => setLocalOptions(prev => ({ ...prev, [item.key]: Number(e.target.value) }))}
-                                                className="w-full"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {activeTab === 'color' && (
-                                <div className="space-y-6">
-                                    {[
-                                        { key: 'saturation', label: lang === 'es' ? 'Saturación' : 'Saturation', icon: <Droplets size={14} />, min: 0, max: 3, step: 0.1, default: 1 },
-                                        { key: 'hue', label: lang === 'es' ? 'Tono (Hue)' : 'Hue', icon: <Palette size={14} />, min: 0, max: 360, step: 1, default: 0 },
-                                    ].map(item => (
-                                        <div key={item.key} className="space-y-4">
-                                            <div className="flex justify-between items-center">
-                                                <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] flex items-center gap-2">
-                                                    {item.icon} {item.label}
-                                                </label>
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => setLocalOptions(prev => ({ ...prev, [item.key]: item.default }))}
-                                                        className="p-1 text-[var(--ink-soft)] hover:text-[var(--accent)] transition-colors"
-                                                        title={lang === 'es' ? "Restablecer" : "Reset"}
-                                                    >
-                                                        <RotateCw size={10} />
-                                                    </button>
-                                                    <input
-                                                        type="number"
-                                                        value={localOptions[item.key as keyof TransformOptions] as number}
-                                                        onChange={(e) => setLocalOptions(prev => ({ ...prev, [item.key]: Number(e.target.value) }))}
-                                                        className="w-12 bg-white border border-[var(--line)] rounded px-1 py-0.5 text-[10px] font-mono font-bold text-center"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <input
-                                                type="range" min={item.min} max={item.max} step={item.step}
-                                                value={localOptions[item.key as keyof TransformOptions] as number}
-                                                onChange={(e) => setLocalOptions(prev => ({ ...prev, [item.key]: Number(e.target.value) }))}
-                                                className="w-full"
+                                                className="w-full h-1.5 rounded-full bg-[var(--line)] accent-[var(--accent)] appearance-none cursor-pointer"
                                             />
                                         </div>
                                     ))}
@@ -467,6 +560,25 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
 
                             {activeTab === 'avanzado' && (
                                 <div className="space-y-8">
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)]">{lang === 'es' ? 'Formato & Comparativa' : 'Format & Comparison'}</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {['webp', 'avif', 'jpeg', 'png'].map((fmt) => (
+                                                <button
+                                                    key={fmt}
+                                                    onClick={() => setLocalOptions(prev => ({ ...prev, format: fmt as OutputFormat }))}
+                                                    className={`rounded-xl border p-3 text-xs font-bold transition-all flex flex-col items-center gap-1 ${localOptions.format === fmt ? 'bg-[var(--accent)] text-white border-transparent' : 'bg-white text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--accent)]'}`}
+                                                >
+                                                    {fmt.toUpperCase()}
+                                                    {estimations[fmt] && (
+                                                        <span className="text-[8px] opacity-70 font-mono">
+                                                            {Math.round(estimations[fmt] / 1024)} KB
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] flex items-center gap-1.5">
