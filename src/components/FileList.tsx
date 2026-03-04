@@ -2,7 +2,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, FileImage, Trash2, SlidersHorizontal, CheckCircle2, AlertCircle, Loader2, AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
+import { X, FileImage, Trash2, SlidersHorizontal, CheckCircle2, AlertCircle, Loader2, AlertTriangle, TrendingDown, TrendingUp, Sparkles } from "lucide-react";
 import { TransformOptions, estimateImpact, formatBytes } from "@/lib/image-tools";
 import { InfoTooltip } from "./InfoTooltip";
 
@@ -12,6 +12,7 @@ interface QueueItem {
     previewUrl: string;
     status?: "idle" | "processing" | "done" | "error" | "skipped";
     isolatedFormat?: "webp" | "avif" | "jpeg" | "png";
+    customOverrides?: Partial<TransformOptions>;
 }
 
 interface FileListProps {
@@ -41,11 +42,49 @@ export function FileList({
     options,
     lang,
 }: FileListProps) {
+    const LABEL_MAP: Record<string, { es: string; en: string }> = {
+        format: { es: 'Formato', en: 'Format' },
+        quality: { es: 'Calidad', en: 'Quality' },
+        width: { es: 'Ancho', en: 'Width' },
+        height: { es: 'Alto', en: 'Height' },
+        fit: { es: 'Ajuste', en: 'Fit' },
+        rotate: { es: 'Rotación', en: 'Rotation' },
+        grayscale: { es: 'B/N', en: 'Grayscale' },
+        blur: { es: 'Desenfoque', en: 'Blur' },
+        sharpen: { es: 'Enfoque', en: 'Sharpen' },
+        flip: { es: 'Voltear V', en: 'Flip V' },
+        flop: { es: 'Voltear H', en: 'Flip H' },
+        stripMetadata: { es: 'Quitar Metadatos', en: 'Strip Metadata' },
+        withoutEnlargement: { es: 'Sin ampliar', en: 'Without Enlargement' },
+        background: { es: 'Fondo', en: 'Background' },
+        lossless: { es: 'Sin pérdida', en: 'Lossless' },
+        brightness: { es: 'Brillo', en: 'Brightness' },
+        saturation: { es: 'Saturación', en: 'Saturation' },
+        hue: { es: 'Tono', en: 'Hue' },
+        contrast: { es: 'Contraste', en: 'Contrast' },
+        gamma: { es: 'Gamma', en: 'Gamma' },
+        sepia: { es: 'Sepia', en: 'Sepia' },
+        smartCrop: { es: 'Auto Recorte', en: 'Smart Crop' },
+        watermarkText: { es: 'Texto Marca', en: 'Watermark Text' },
+        watermarkOpacity: { es: 'Opacidad Marca', en: 'Watermark Opacity' },
+        watermarkPosition: { es: 'Posición Marca', en: 'Watermark Position' },
+        watermarkColor: { es: 'Color Marca', en: 'Watermark Color' },
+        watermarkMode: { es: 'Modo Marca', en: 'Watermark Mode' },
+        watermarkSize: { es: 'Tamaño Marca', en: 'Watermark Size' },
+        watermarkSpacing: { es: 'Espaciado Marca', en: 'Watermark Spacing' },
+        watermarkMetadata: { es: 'Metadatos Marca', en: 'Watermark Metadata' },
+        seoFriendly: { es: 'Limpieza SEO', en: 'SEO Friendly' },
+        renamePattern: { es: 'Patrón Nombre', en: 'Rename Pattern' },
+    };
+
     const isHighRisk = (item: QueueItem) => {
-        if (item.isolatedFormat) return false;
-        if (options.format === 'jpeg' && (item.file.type === 'image/png' || item.file.type === 'image/svg+xml')) return true;
-        if (options.quality < 65 && item.file.size > 1024 * 1024) return true;
-        if (options.blur > 5) return true;
+        const itemOpts = { ...options, ...item.customOverrides };
+        if (item.isolatedFormat && !item.customOverrides?.format) {
+            itemOpts.format = item.isolatedFormat;
+        }
+        if (itemOpts.format === 'jpeg' && (item.file.type === 'image/png' || item.file.type === 'image/svg+xml')) return true;
+        if (itemOpts.quality !== undefined && itemOpts.quality < 65 && item.file.size > 1024 * 1024) return true;
+        if (itemOpts.blur !== undefined && itemOpts.blur > 5) return true;
         return false;
     };
 
@@ -105,6 +144,7 @@ export function FileList({
                                             </div>
                                         </button>
                                     )}
+
                                     {isHighRisk(item) && (
                                         <InfoTooltip
                                             title={lang === 'es' ? "Alto Riesgo Visual ⚠️" : "High Visual Risk ⚠️"}
@@ -159,7 +199,11 @@ export function FileList({
                             <div className="flex items-center justify-between gap-2 p-3">
                                 <div className="min-w-0">
                                     {(() => {
-                                        const estimated = estimateImpact(item.file.size, options.format, options.quality, options.width, options.height);
+                                        const itemOpts = { ...options, ...item.customOverrides };
+                                        if (item.isolatedFormat && !item.customOverrides?.format) {
+                                            itemOpts.format = item.isolatedFormat;
+                                        }
+                                        const estimated = estimateImpact(item.file.size, itemOpts.format, itemOpts.quality, itemOpts.width ?? null, itemOpts.height ?? null);
                                         const saved = item.file.size - estimated;
                                         const percent = Math.round((saved / item.file.size) * 100);
                                         const isSaving = saved > 0;
@@ -186,6 +230,42 @@ export function FileList({
                                     })()}
                                 </div>
                                 <div className={`flex items-center gap-2 shrink-0 ${item.status && item.status !== 'idle' ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    {item.customOverrides && Object.keys(item.customOverrides).length > 0 && (() => {
+                                        const changedKeys = Object.keys(item.customOverrides) as (keyof TransformOptions)[];
+                                        return (
+                                            <InfoTooltip
+                                                title={lang === 'es' ? "Ajustes Personalizados" : "Custom Settings"}
+                                                content={
+                                                    <div className="space-y-3">
+                                                        <p className="text-sm font-medium">{lang === 'es' ? "Esta imagen tiene ajustes únicos que sobreescriben la configuración global:" : "This image has unique settings that override the global configuration:"}</p>
+                                                        <div className="max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                                                            <ul className="list-none space-y-2">
+                                                                {changedKeys.map(k => {
+                                                                    const val = item.customOverrides![k];
+                                                                    const glob = options[k];
+                                                                    const sVal = val === null ? "null" : typeof val === 'object' ? JSON.stringify(val) : String(val);
+                                                                    const sGlob = glob === null ? "null" : typeof glob === 'object' ? JSON.stringify(glob) : String(glob);
+                                                                    const label = LABEL_MAP[k]?.[lang] || k;
+                                                                    return (
+                                                                        <li key={k} className="text-xs bg-white/50 p-2 rounded-lg border border-purple-500/20">
+                                                                            <div className="font-bold text-gray-700 mb-0.5">{label}</div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded font-mono font-medium truncate max-w-[120px]" title={sVal}>{sVal}</span>
+                                                                                <span className="opacity-60 text-[10px] truncate max-w-[100px]" title={`Global: ${sGlob}`}>(Global: {sGlob})</span>
+                                                                            </div>
+                                                                        </li>
+                                                                    )
+                                                                })}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                className="group/ovr relative inline-flex items-center justify-center rounded-xl bg-purple-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-700 transition-all hover:bg-purple-200 cursor-help shadow-sm mr-1 h-[36px]"
+                                            >
+                                                {lang === 'es' ? "Editada" : "Edited"}
+                                            </InfoTooltip>
+                                        );
+                                    })()}
                                     <button
                                         type="button"
                                         onClick={() => onEdit(item)}

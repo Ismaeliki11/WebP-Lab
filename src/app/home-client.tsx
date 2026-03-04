@@ -12,7 +12,8 @@ import {
   Download,
   XCircle,
   Undo2,
-  Save
+  Save,
+  SlidersHorizontal
 } from "lucide-react";
 
 import {
@@ -44,6 +45,7 @@ interface QueueItem {
   previewUrl: string;
   status?: "idle" | "processing" | "done" | "error" | "skipped";
   isolatedFormat?: "webp" | "avif" | "jpeg" | "png";
+  customOverrides?: Partial<TransformOptions>;
 }
 
 interface ProcessStats {
@@ -505,7 +507,10 @@ export default function HomeClient() {
           try {
             const payload = new FormData();
             payload.append("files", item.file, item.file.name);
-            const currentOptions = item.isolatedFormat ? { ...effectiveOptions, format: item.isolatedFormat } : effectiveOptions;
+            const currentOptions = { ...effectiveOptions, ...item.customOverrides };
+            if (item.isolatedFormat && !item.customOverrides?.format) {
+              currentOptions.format = item.isolatedFormat;
+            }
             payload.append("options", JSON.stringify(currentOptions));
 
             const response = await fetch("/api/transform", {
@@ -584,7 +589,14 @@ export default function HomeClient() {
 
       } else {
         const payload = new FormData();
-        queue.forEach((item) => payload.append("files", item.file, item.file.name));
+        queue.forEach((item) => {
+          payload.append("files", item.file, item.file.name);
+          const currentOptions = { ...effectiveOptions, ...item.customOverrides };
+          if (item.isolatedFormat && !item.customOverrides?.format) {
+            currentOptions.format = item.isolatedFormat;
+          }
+          payload.append("fileOptions", JSON.stringify(currentOptions));
+        });
         payload.append("options", JSON.stringify(effectiveOptions));
 
         setStage("processing");
@@ -717,9 +729,13 @@ export default function HomeClient() {
                 <InfoTooltip
                   title={lang === 'es' ? "Modos de Trabajo" : "Work Modes"}
                   content={
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <p><strong>{lang === 'es' ? 'Fácil:' : 'Easy:'}</strong> {lang === 'es' ? "Te ofrece preajustes orientados a resultados reales (ej. 'Web Rápido', 'Redes Sociales') para que no tengas que preocuparte de tecnicismos." : "Provides result-oriented presets (e.g., 'Fast Web', 'Social Media') so you don't have to worry about technical details."}</p>
                       <p><strong>{lang === 'es' ? 'Avanzado:' : 'Expert:'}</strong> {lang === 'es' ? "Desbloquea control total sobre los algoritmos, barras de compresión, recortes exactos, corrección de color y marca de agua." : "Unlocks full control over algorithms, compression sliders, exact cropping, color correction, and watermark."}</p>
+                      <div className="mt-4 pt-4 border-t border-[var(--line)] space-y-2">
+                        <p className="font-bold text-[var(--accent)] flex items-center gap-1.5"><SlidersHorizontal size={14} /> {lang === 'es' ? 'Configuración Global vs Individual' : 'Global vs Individual Settings'}</p>
+                        <p className="text-sm text-[var(--ink-soft)]">{lang === 'es' ? 'Los ajustes de este panel se aplicarán a TODAS las imágenes por defecto. Sin embargo, si editas una imagen de forma individual (tocando el icono de ajustes directamente en la foto), esos cambios concretos sobreescribirán las opciones globales solo para esa imagen.' : 'The settings in this panel apply to ALL images by default. However, if you edit an image individually (by clicking the settings icon directly on the photo), those specific changes will override the global options only for that image.'}</p>
+                      </div>
                     </div>
                   }
                 />
@@ -1134,8 +1150,11 @@ export default function HomeClient() {
             file: editingItem.file,
             url: editingItem.previewUrl
           }}
-          options={options}
-          setOptions={setOptions}
+          options={effectiveOptions}
+          itemOverrides={editingItem.customOverrides}
+          onSaveOverrides={(overrides) => {
+            setQueue(prev => prev.map(q => q.id === editingItem.id ? { ...q, customOverrides: overrides } : q));
+          }}
           lang={lang}
         />
       )}

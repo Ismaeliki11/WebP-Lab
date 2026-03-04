@@ -37,13 +37,24 @@ interface ImageEditorProps {
         file: File;
         url: string;
     };
-    setOptions: (options: TransformOptions) => void;
     options: TransformOptions;
+    itemOverrides?: Partial<TransformOptions>;
+    onSaveOverrides: (overrides: Partial<TransformOptions> | undefined) => void;
     lang: "es" | "en";
 }
 
-export function ImageEditor({ isOpen, onClose, image, options, setOptions, lang }: ImageEditorProps) {
-    const [localOptions, setLocalOptions] = useState<TransformOptions>(options);
+export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, onSaveOverrides, lang }: ImageEditorProps) {
+    const [localOptions, setLocalOptions] = useState<TransformOptions>(() => ({ ...options, ...itemOverrides }));
+
+    useEffect(() => {
+        if (isOpen) {
+            setLocalOptions({ ...options, ...itemOverrides });
+            setActiveTab("ajustes");
+            setIsViewingOriginal(false);
+            setZoom(1);
+        }
+    }, [isOpen, options, itemOverrides]);
+
     const [activeTab, setActiveTab] = useState<"ajustes" | "color" | "efectos" | "avanzado">("ajustes");
     const [sliderPos, setSliderPos] = useState(50);
     const [estimations, setEstimations] = useState<Record<string, number>>({});
@@ -270,10 +281,24 @@ export function ImageEditor({ isOpen, onClose, image, options, setOptions, lang 
                     {/* Sidebar Controls */}
                     <div className="w-full h-full flex flex-col border-l border-[var(--line)] bg-[#f8fafc] md:w-[400px]">
                         <header className="shrink-0 flex items-center justify-between border-b border-[var(--line)] p-6">
-                            <h2 className="text-xl font-bold text-[var(--ink-0)] flex items-center gap-2">
-                                <SlidersHorizontal size={20} className="text-[var(--accent)]" />
-                                Ajustes de Imagen
-                            </h2>
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-xl font-bold text-[var(--ink-0)] flex items-center gap-2">
+                                    <SlidersHorizontal size={20} className="text-[var(--accent)]" />
+                                    {lang === 'es' ? 'Ajustes de Imagen' : 'Image Settings'}
+                                </h2>
+                                <InfoTooltip
+                                    title={lang === 'es' ? "Ajustes Individuales" : "Individual Settings"}
+                                    content={
+                                        <div className="space-y-3">
+                                            <p>{lang === 'es' ? "Estás editando esta imagen de forma aislada. Cualquier cambio que hagas aquí solo se aplicará a este archivo concreto." : "You are editing this image in isolation. Any changes made here will only apply to this specific file."}</p>
+                                            <div className="bg-[var(--accent)]/10 text-[var(--ink-0)] p-3 rounded-xl border border-[var(--accent)]/20 text-xs shadow-sm">
+                                                <p className="font-bold flex items-center gap-1.5 mb-1"><Sparkles size={14} className="text-[var(--accent)]" /> {lang === 'es' ? "Sobreescritura inteligente" : "Smart Overwrite"}</p>
+                                                <p>{lang === 'es' ? "Solo los valores que modifiques aquí reemplazarán a la configuración global (identificada con la etiqueta de 'Editada'). Lo que no toques con respecto a los valores iniciales, seguirá heredando de los ajustes generales del lote." : "Only the values you modify here will replace the global configuration (marked with an 'Edited' label). What you leave as the default will continue to inherit from the general batch settings."}</p>
+                                            </div>
+                                        </div>
+                                    }
+                                />
+                            </div>
                             <button onClick={onClose} className="rounded-full p-2 hover:bg-gray-200 transition-colors">
                                 <X size={20} />
                             </button>
@@ -798,7 +823,14 @@ export function ImageEditor({ isOpen, onClose, image, options, setOptions, lang 
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => {
-                                        setOptions(localOptions);
+                                        const overrides: Partial<TransformOptions> = {};
+                                        for (const key in localOptions) {
+                                            const k = key as keyof TransformOptions;
+                                            if (localOptions[k] !== options[k]) {
+                                                (overrides as any)[k] = localOptions[k];
+                                            }
+                                        }
+                                        onSaveOverrides(Object.keys(overrides).length > 0 ? overrides : undefined);
                                         onClose();
                                     }}
                                     className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-4 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-110 active:scale-[0.98]"
