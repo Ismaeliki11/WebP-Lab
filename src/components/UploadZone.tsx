@@ -11,6 +11,7 @@ interface UploadZoneProps {
     onDragLeave: () => void;
     onFileInput: (e: ChangeEvent<HTMLInputElement>) => void;
     queueLength: number;
+    lang: "es" | "en";
 }
 
 export function UploadZone({
@@ -20,29 +21,30 @@ export function UploadZone({
     onDragLeave,
     onFileInput,
     queueLength,
+    lang,
 }: UploadZoneProps) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                     <Upload size={18} className="text-[var(--accent)]" />
-                    1. Carga de archivos
+                    {lang === 'es' ? "1. Carga de archivos" : "1. Upload files"}
                 </h2>
                 <span className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-xs font-medium">
-                    {queueLength} {queueLength === 1 ? "archivo" : "archivos"}
+                    {queueLength} {lang === 'es' ? (queueLength === 1 ? "archivo" : "archivos") : (queueLength === 1 ? "file" : "files")}
                 </span>
             </div>
 
             <p className="text-sm text-[var(--ink-soft)]">
-                Arrastra imagenes o usa el selector. Solo archivos de tipo imagen.
+                {lang === 'es' ? "Arrastra imagenes o usa el selector. Solo archivos de tipo imagen." : "Drag images or use the selector. Image files only."}
             </p>
 
             <motion.div
                 whileHover={{ scale: 1.005 }}
                 whileTap={{ scale: 0.995 }}
                 className={`relative mt-4 overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all ${dragActive
-                        ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,white)]"
-                        : "border-[var(--line)] bg-white/60 hover:bg-white/80"
+                    ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,white)]"
+                    : "border-[var(--line)] bg-white/60 hover:bg-white/80"
                     }`}
                 onDrop={onDrop}
                 onDragOver={onDragOver}
@@ -53,11 +55,11 @@ export function UploadZone({
                         <ImageIcon size={32} />
                     </div>
                     <div>
-                        <p className="text-base font-medium">Suelta tus imagenes aqui</p>
-                        <p className="mt-1 text-xs text-[var(--ink-soft)]">JPG, PNG, WebP, AVIF y mas</p>
+                        <p className="text-base font-medium">{lang === 'es' ? "Suelta tus imagenes aqui" : "Drop your images here"}</p>
+                        <p className="mt-1 text-xs text-[var(--ink-soft)]">{lang === 'es' ? "JPG, PNG, WebP, AVIF y mas" : "JPG, PNG, WebP, AVIF and more"}</p>
                     </div>
                     <label className="relative mt-2 inline-flex cursor-pointer items-center justify-center rounded-full bg-[var(--ink-0)] px-6 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--ink-soft)] shadow-lg shadow-black/5">
-                        Elegir archivos
+                        {lang === 'es' ? "Elegir archivos" : "Choose files"}
                         <input
                             type="file"
                             className="hidden"
@@ -78,7 +80,7 @@ export function UploadZone({
                         >
                             <div className="flex flex-col items-center gap-2">
                                 <Upload size={48} className="animate-bounce" />
-                                <span className="text-xl font-bold">¡Suelta para añadir!</span>
+                                <span className="text-xl font-bold">{lang === 'es' ? "¡Suelta para añadir!" : "Drop to add!"}</span>
                             </div>
                         </motion.div>
                     )}

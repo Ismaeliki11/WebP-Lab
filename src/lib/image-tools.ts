@@ -31,6 +31,13 @@ export interface TransformOptions {
   smartCrop: boolean;
   watermarkText: string | null;
   watermarkOpacity: number;
+  watermarkPosition: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top" | "bottom" | "left" | "right";
+  watermarkColor: "white" | "black";
+  watermarkMode: "single" | "pattern";
+  watermarkSize: number;
+  watermarkSpacing: number;
+  watermarkMetadata: boolean;
+  seoFriendly: boolean;
   renamePattern: string | null;
 }
 
@@ -66,7 +73,14 @@ export const DEFAULT_OPTIONS: TransformOptions = {
   smartCrop: false,
   watermarkText: null,
   watermarkOpacity: 0.5,
-  renamePattern: null,
+  watermarkPosition: "center",
+  watermarkColor: "white",
+  watermarkMode: "single",
+  watermarkSize: 32,
+  watermarkSpacing: 100,
+  watermarkMetadata: false,
+  seoFriendly: true,
+  renamePattern: "[name]",
 };
 
 export const PRESETS: TransformPreset[] = [
@@ -189,6 +203,8 @@ export function parseTransformOptions(raw: unknown): TransformOptions {
   const contrastInput = Number(source.contrast);
   const gammaInput = source.gamma === null || source.gamma === undefined ? null : Number(source.gamma);
   const watermarkOpacityInput = Number(source.watermarkOpacity);
+  const watermarkSizeInput = Number(source.watermarkSize);
+  const watermarkSpacingInput = Number(source.watermarkSpacing);
 
   return {
     format: isOutputFormat(source.format) ? source.format : DEFAULT_OPTIONS.format,
@@ -217,6 +233,13 @@ export function parseTransformOptions(raw: unknown): TransformOptions {
     smartCrop: toBool(source.smartCrop, DEFAULT_OPTIONS.smartCrop),
     watermarkText: typeof source.watermarkText === "string" ? source.watermarkText : DEFAULT_OPTIONS.watermarkText,
     watermarkOpacity: Number.isFinite(watermarkOpacityInput) ? clamp(watermarkOpacityInput, 0, 1) : DEFAULT_OPTIONS.watermarkOpacity,
+    watermarkPosition: (["center", "top-left", "top-right", "bottom-left", "bottom-right"].includes(source.watermarkPosition as string) ? source.watermarkPosition : DEFAULT_OPTIONS.watermarkPosition) as any,
+    watermarkColor: (["white", "black"].includes(source.watermarkColor as string) ? source.watermarkColor : DEFAULT_OPTIONS.watermarkColor) as any,
+    watermarkMode: (["single", "pattern"].includes(source.watermarkMode as string) ? source.watermarkMode : DEFAULT_OPTIONS.watermarkMode) as any,
+    watermarkSize: Number.isFinite(watermarkSizeInput) ? clamp(watermarkSizeInput, 8, 120) : DEFAULT_OPTIONS.watermarkSize,
+    watermarkSpacing: Number.isFinite(watermarkSpacingInput) ? clamp(watermarkSpacingInput, 20, 200) : DEFAULT_OPTIONS.watermarkSpacing,
+    watermarkMetadata: toBool(source.watermarkMetadata, DEFAULT_OPTIONS.watermarkMetadata),
+    seoFriendly: toBool(source.seoFriendly, DEFAULT_OPTIONS.seoFriendly),
     renamePattern: typeof source.renamePattern === "string" ? source.renamePattern : DEFAULT_OPTIONS.renamePattern,
   };
 }
@@ -250,4 +273,29 @@ export function formatBytes(bytes: number): string {
   }
 
   return `${value.toFixed(value >= 100 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+export function estimateImpact(inputBytes: number, format: OutputFormat, quality: number, width: number | null, height: number | null): number {
+  if (inputBytes === 0) return 0;
+
+  let baseMultiplier = 1.0;
+  if (format === 'avif') baseMultiplier = 0.4;
+  else if (format === 'webp') baseMultiplier = 0.5;
+  else if (format === 'jpeg') baseMultiplier = 0.7;
+  else if (format === 'png') baseMultiplier = 0.9;
+
+  const qualityFactor = Math.pow(quality / 80, 1.5);
+
+  let resizeFactor = 1.0;
+  if (width || height) {
+    const targetPixels = (width || 1200) * (height || 1200);
+    const avgOriginalPixels = 12000000;
+    resizeFactor = Math.min(1.0, targetPixels / avgOriginalPixels);
+    resizeFactor = Math.sqrt(resizeFactor);
+  }
+
+  let estimatedOutput = inputBytes * baseMultiplier * qualityFactor * resizeFactor;
+  estimatedOutput = Math.max(inputBytes * 0.1, Math.min(estimatedOutput, inputBytes * 1.5));
+
+  return estimatedOutput;
 }

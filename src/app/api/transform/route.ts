@@ -401,16 +401,23 @@ export async function POST(req: NextRequest): Promise<Response> {
       }
     }
 
-    const optionsParsed = parseOptionsField(formData.get("options"));
-    if (optionsParsed instanceof Response) {
-      return optionsParsed;
-    }
-    const options = optionsParsed;
+    const globalOptionsField = formData.get("options");
+    const fileOptionsFields = formData.getAll("fileOptions");
+
+    const globalOptionsParsed = globalOptionsField ? parseOptionsField(globalOptionsField) : parseTransformOptions({});
+    if (globalOptionsParsed instanceof Response) return globalOptionsParsed;
 
     const results = await mapWithConcurrency(
       files,
       limits.concurrency,
-      async (file, index) => transformOne(file, index, options),
+      async (file, index) => {
+        let fileOpts = globalOptionsParsed;
+        if (fileOptionsFields[index]) {
+          const parsed = parseOptionsField(fileOptionsFields[index]);
+          if (!(parsed instanceof Response)) fileOpts = parsed;
+        }
+        return transformOne(file, index, fileOpts);
+      }
     );
 
     const successes = results.filter(
@@ -469,7 +476,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     const manifest = {
       generatedAt: new Date().toISOString(),
-      options,
+      options: globalOptionsParsed,
       totals: {
         processed: successes.length,
         failed: failures.length,
@@ -496,7 +503,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 
     if (failures.length > 0) {
-      zip.file("errors.txt", buildErrorReport(failures, successes, options));
+      zip.file("errors.txt", buildErrorReport(failures, successes, globalOptionsParsed));
     }
 
     const zipBuffer = await zip.generateAsync({
