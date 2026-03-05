@@ -1,10 +1,26 @@
-# WebP Lab — Professional Image Optimization Suite
+<div align="center">
+  <img src="./public/github-banner.svg" alt="WebP Lab Banner" width="100%"/>
 
-WebP Lab is an advanced web-based image processing platform designed to provide full control over the conversion and optimization of visual assets. It centralizes professional editing tools and cutting-edge compression algorithms in an intuitive and fluid interface.
+  <h3>⚡ Professional Image Optimization Suite ⚡</h3>
+  
+  <p align="center">
+    <a href="https://webp-lab.vercel.app" target="_blank">
+      <img src="https://img.shields.io/badge/Live_Demo-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+    </a>
+    <img src="https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
+    <img src="https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/Sharp-30A53C?style=for-the-badge&logo=sharp&logoColor=white" alt="Sharp" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  </p>
+  
+  <p><em>"Optimización masiva de imágenes sin sacrificar calidad, velocidad ni privacidad."</em></p>
+</div>
 
 ---
 
 ## Project Purpose
+
+**WebP Lab** is an advanced web-based image processing platform designed to provide full control over the conversion and optimization of visual assets. It centralizes professional editing tools and cutting-edge compression algorithms in an intuitive and fluid interface.
 
 The primary goal of WebP Lab is to provide web designers and developers with a secure and powerful environment to prepare images for the modern web. Unlike conventional online tools, this platform allows for local batch processing of large files, ensuring privacy and removing size or quantity restrictions.
 
@@ -42,12 +58,24 @@ The primary goal of WebP Lab is to provide web designers and developers with a s
 
 This application uses a modern technology stack to ensure maximum performance:
 
-*   Framework: Next.js (React 19) with App Router.
-*   Image Processing: Sharp (the gold standard in Node.js for high performance).
-*   Styling: Vanilla CSS with Tailwind CSS v4 support for dynamic utilities.
-*   Animations: Framer Motion for a fluid and reactive user experience.
-*   Iconography: Lucide React.
-*   Packaging: JSZip for client-side compressed file management.
+*   **Framework:** Next.js (React 19) with App Router.
+*   **Image Processing:** Sharp (the gold standard in Node.js for high performance).
+*   **Styling:** Vanilla CSS with Tailwind CSS v4 support for dynamic utilities.
+*   **Animations:** Framer Motion for a fluid and reactive user experience.
+*   **Iconography:** Lucide React.
+*   **Packaging:** JSZip for client-side compressed file management.
+
+---
+
+## 🚀 Engineering & Technical Highlights
+
+As an engineering piece, **WebP Lab** solves several common challenges in web tools involving file processing:
+
+1.  **Architecture:** Utilizes Next.js Server Components and API Routes to offload heavy image processing (like Sharp) onto the server side, keeping the client completely lightweight and reactive.
+2.  **State Management & Performance:** Implements a high-performance state management approach for handling massive simultaneous file uploads while preventing browser memory leaks using modern React 19 standards.
+3.  **Security & Privacy First:** No images are ever saved persistently on external servers. Processing occurs entirely within isolated execution contexts and files are immediately garbage-collected after streaming the converted output back to the client.
+4.  **Responsive Engineering:** Implements mobile-first css abstractions and fluid animation handoffs using `framer-motion` to ensure identical layout fidelity from 4K monitors down to mobile viewports.
+5.  **Dynamic Concurrency:** Limits active workers depending on the `.env` settings to prevent overwhelming the server with massive batch processing workloads.
 
 ---
 
