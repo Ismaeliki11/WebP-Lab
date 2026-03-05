@@ -4,7 +4,7 @@
   <h3>⚡ Professional Image Optimization Suite ⚡</h3>
   
   <p align="center">
-    <a href="https://webp-lab.vercel.app" target="_blank">
+    <a href="https://web-p-lab.vercel.app/" target="_blank">
       <img src="https://img.shields.io/badge/Live_Demo-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
     </a>
     <img src="https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
