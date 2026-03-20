@@ -494,6 +494,21 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                                     <div className="grid grid-cols-2 gap-3">
                                         {[
                                             {
+                                                key: "removeBackground", label: lang === 'es' ? "Sin fondo" : "No Background", tooltipNative: true, tooltip: lang === 'es' ? (
+                                                    <div className="space-y-2">
+                                                        <p>Elimina automaticamente el fondo usando <strong>remove.bg</strong> y deja transparencia en esta imagen concreta.</p>
+                                                        <p>Ideal para sobrescribir el lote solo cuando una foto necesita recorte aislado.</p>
+                                                        <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10">Si existe <code>REMOVE_BG_API_KEY</code> usara remove.bg; si no, la app cae automaticamente al motor local. Si exportas a JPEG, la transparencia final se convertira en un fondo solido.</InfoNote>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        <p>Automatically removes the background using <strong>remove.bg</strong> and leaves transparency on this specific image.</p>
+                                                        <p>Useful when only one file in the batch needs an isolated cutout.</p>
+                                                        <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10">If <code>REMOVE_BG_API_KEY</code> exists it will use remove.bg; otherwise the app falls back to the local engine. If you export to JPEG, the final transparency becomes a solid background.</InfoNote>
+                                                    </div>
+                                                )
+                                            },
+                                            {
                                                 key: "stripMetadata", label: lang === 'es' ? "No meta" : "No Meta", tooltipNative: true, tooltip: lang === 'es' ? (
                                                     <div className="space-y-2">
                                                         <p>Elimina todos los "datos extra ocultos" (metadatos) que vienen incrustados dentro de la fotografía original, como por ejemplo:</p>

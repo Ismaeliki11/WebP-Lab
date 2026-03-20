@@ -48,6 +48,11 @@ interface QueueItem {
   customOverrides?: Partial<TransformOptions>;
 }
 
+interface BackgroundAsset {
+  file: File;
+  previewUrl: string;
+}
+
 interface ProcessStats {
   inputBytes: number;
   outputBytes: number;
@@ -67,6 +72,9 @@ interface EasySettings {
   size: EasySize;
   stripMetadata: boolean;
   withoutEnlargement: boolean;
+  removeBackground: boolean;
+  backgroundMode: TransformOptions["backgroundMode"];
+  backgroundColor: string | null;
 }
 
 const ROTATION_OPTIONS: Array<TransformOptions["rotate"]> = [0, 90, 180, 270];
@@ -98,6 +106,9 @@ const DEFAULT_EASY_SETTINGS: EasySettings = {
   size: "original",
   stripMetadata: true,
   withoutEnlargement: true,
+  removeBackground: false,
+  backgroundMode: "transparent",
+  backgroundColor: "#ffffff",
 };
 
 function isImageFile(file: File): boolean {
@@ -156,6 +167,11 @@ function parseEasySettings(raw: unknown): EasySettings {
     size: size === "original" || size === "1920" || size === "1200" || size === "800" ? size : "original",
     stripMetadata: typeof source.stripMetadata === "boolean" ? source.stripMetadata : true,
     withoutEnlargement: typeof source.withoutEnlargement === "boolean" ? source.withoutEnlargement : true,
+    removeBackground: typeof source.removeBackground === "boolean" ? source.removeBackground : false,
+    backgroundMode: source.backgroundMode === "transparent" || source.backgroundMode === "solid" || source.backgroundMode === "image"
+      ? source.backgroundMode
+      : DEFAULT_EASY_SETTINGS.backgroundMode,
+    backgroundColor: parseTransformOptions({ background: source.backgroundColor }).background ?? DEFAULT_EASY_SETTINGS.backgroundColor,
   };
 }
 
@@ -177,6 +193,9 @@ function buildOptionsFromEasy(settings: EasySettings): TransformOptions {
     fit: sizeMap[settings.size].fit,
     stripMetadata: settings.stripMetadata,
     withoutEnlargement: settings.withoutEnlargement,
+    background: settings.backgroundColor,
+    removeBackground: settings.removeBackground,
+    backgroundMode: settings.removeBackground ? settings.backgroundMode : "transparent",
     lossless: false,
   };
 
@@ -201,6 +220,28 @@ function buildOptionsFromEasy(settings: EasySettings): TransformOptions {
 function easySizeLabel(size: EasySize, lang: "es" | "en"): string {
   if (size === "original") return lang === "es" ? "Original" : "Original";
   return lang === 'es' ? `${size}px ancho máximo` : `${size}px max width`;
+}
+
+function resolveQueueItemOptions(item: QueueItem, baseOptions: TransformOptions): TransformOptions {
+  const currentOptions = parseTransformOptions({
+    ...baseOptions,
+    ...item.customOverrides,
+  });
+
+  if (item.isolatedFormat && !item.customOverrides?.format) {
+    currentOptions.format = item.isolatedFormat;
+  }
+
+  return currentOptions;
+}
+
+function itemWillLoseTransparency(item: QueueItem, baseOptions: TransformOptions): boolean {
+  const currentOptions = resolveQueueItemOptions(item, baseOptions);
+  const sourceHasTransparency = item.file.type === "image/png" || item.file.type === "image/svg+xml";
+  return (
+    currentOptions.format === "jpeg" &&
+    (sourceHasTransparency || (currentOptions.removeBackground && currentOptions.backgroundMode === "transparent"))
+  );
 }
 
 const TRANSLATIONS = {
@@ -241,7 +282,7 @@ const TRANSLATIONS = {
     downloadIndividually: "Descarga foto a foto",
     downloadOptions: "Opciones de Descarga",
     transparencyWarningTitle: "Atención: Pérdida de transparencia",
-    transparencyWarningDesc: "Has elegido JPEG, pero {count} {plural} transparencia (PNG/SVG). Tendrán un fondo sólido.",
+    transparencyWarningDesc: "Has elegido JPEG, pero {count} {plural} transparencia o la crearán al eliminar el fondo. Tendrán un fondo sólido.",
     isolateAllWebp: "Aislar todas en WebP",
     hideDetails: "Ocultar detalles",
     viewImages: "Ver imágenes...",
@@ -292,7 +333,7 @@ const TRANSLATIONS = {
     downloadIndividually: "Downloads individually",
     downloadOptions: "Download Options",
     transparencyWarningTitle: "Warning: Transparency loss",
-    transparencyWarningDesc: "You selected JPEG, but {count} image(s) contain transparency. They will have a solid background.",
+    transparencyWarningDesc: "You selected JPEG, but {count} image(s) already have transparency or will gain it after background removal. They will have a solid background.",
     isolateAllWebp: "Isolate all as WebP",
     hideDetails: "Hide details",
     viewImages: "View images...",
@@ -326,6 +367,7 @@ export default function HomeClient() {
   const [customPresets, setCustomPresets] = useState<TransformPreset[]>([]);
   const [easySettings, setEasySettings] = useState<EasySettings>(DEFAULT_EASY_SETTINGS);
   const [options, setOptions] = useState<TransformOptions>(DEFAULT_OPTIONS);
+  const [backgroundAsset, setBackgroundAsset] = useState<BackgroundAsset | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [stage, setStage] = useState<ProcessStage>("idle");
@@ -430,9 +472,10 @@ export default function HomeClient() {
   useEffect(() => {
     return () => {
       queueRef.current.forEach((item) => revokePreviewUrl(item.previewUrl));
+      if (backgroundAsset) revokePreviewUrl(backgroundAsset.previewUrl);
       abortRef.current?.abort();
     };
-  }, []);
+  }, [backgroundAsset]);
 
   const totalUploadSize = useMemo(() => queue.reduce((sum, item) => sum + item.file.size, 0), [queue]);
   const compressionRatio = useMemo(() => {
@@ -449,9 +492,8 @@ export default function HomeClient() {
   }, [totalUploadSize, effectiveOptions]);
 
   const transparentFiles = useMemo(() => {
-    if (effectiveOptions.format !== "jpeg") return [];
-    return queue.filter(q => !q.isolatedFormat && (q.file.type === "image/png" || q.file.type === "image/svg+xml"));
-  }, [queue, effectiveOptions.format]);
+    return queue.filter((item) => itemWillLoseTransparency(item, effectiveOptions));
+  }, [queue, effectiveOptions]);
 
   const transparentFilesCount = transparentFiles.length;
 
@@ -516,6 +558,31 @@ export default function HomeClient() {
     } catch (previewError) {
       console.warn("HEIC preview fallback failed", previewError);
     }
+  };
+
+  const updateBackgroundAsset = (file: File | null): void => {
+    if (!file) {
+      setBackgroundAsset((prev) => {
+        if (prev) revokePreviewUrl(prev.previewUrl);
+        return null;
+      });
+      return;
+    }
+
+    if (!isImageFile(file)) {
+      setError(lang === "es" ? "La imagen de fondo debe ser un archivo de imagen válido." : "Background image must be a valid image file.");
+      return;
+    }
+
+    setError(null);
+    const previewUrl = URL.createObjectURL(file);
+    setBackgroundAsset((prev) => {
+      if (prev) revokePreviewUrl(prev.previewUrl);
+      return {
+        file,
+        previewUrl,
+      };
+    });
   };
 
   const addFiles = (incomingFiles: File[]): void => {
@@ -602,8 +669,21 @@ export default function HomeClient() {
     setSelectedPresetId("webp-web");
     setOptions(DEFAULT_OPTIONS);
     setEasySettings(DEFAULT_EASY_SETTINGS);
+    setBackgroundAsset((prev) => {
+      if (prev) revokePreviewUrl(prev.previewUrl);
+      return null;
+    });
     localStorage.removeItem(OPTIONS_STORAGE_KEY);
     localStorage.removeItem(EASY_STORAGE_KEY);
+  };
+
+  const setBatchRemoveBackground = (enabled: boolean): void => {
+    if (mode === "easy") {
+      setEasySettings((prev) => ({ ...prev, removeBackground: enabled }));
+      return;
+    }
+
+    setOptions((prev) => parseTransformOptions({ ...prev, removeBackground: enabled }));
   };
 
   const abortProcessing = (): void => {
@@ -616,6 +696,31 @@ export default function HomeClient() {
 
   const processImages = async (downloadMode: 'zip' | 'folder' = 'zip'): Promise<void> => {
     if (queue.length === 0 || processing) return;
+
+    const transparencyRiskItems = queue.filter((item) => itemWillLoseTransparency(item, effectiveOptions));
+    const requiresSharedBackgroundImage = queue.some((item) => {
+      const currentOptions = resolveQueueItemOptions(item, effectiveOptions);
+      return currentOptions.removeBackground && currentOptions.backgroundMode === "image";
+    });
+
+    if (requiresSharedBackgroundImage && !backgroundAsset) {
+      setError(
+        lang === "es"
+          ? "Has activado fondo por imagen tras eliminar el fondo, pero no has cargado la imagen compartida."
+          : "You enabled image background replacement after removing the background, but no shared background image was uploaded.",
+      );
+      return;
+    }
+
+    if (transparencyRiskItems.length > 0) {
+      const confirmed = window.confirm(
+        lang === "es"
+          ? `Has elegido JPEG para ${transparencyRiskItems.length} imagen(es) con transparencia o con eliminacion de fondo. Se exportaran con un fondo solido. ¿Deseas continuar?`
+          : `You selected JPEG for ${transparencyRiskItems.length} image(s) with transparency or background removal enabled. They will be exported with a solid background. Continue?`,
+      );
+      if (!confirmed) return;
+    }
+
     setProcessing(true);
     setStage("preparing");
     setError(null);
@@ -660,11 +765,11 @@ export default function HomeClient() {
           try {
             const payload = new FormData();
             payload.append("files", item.file, item.file.name);
-            const currentOptions = { ...effectiveOptions, ...item.customOverrides };
-            if (item.isolatedFormat && !item.customOverrides?.format) {
-              currentOptions.format = item.isolatedFormat;
-            }
+            const currentOptions = resolveQueueItemOptions(item, effectiveOptions);
             payload.append("options", JSON.stringify(currentOptions));
+            if (backgroundAsset) {
+              payload.append("backgroundAsset", backgroundAsset.file, backgroundAsset.file.name);
+            }
 
             const response = await fetch("/api/transform", {
               method: "POST",
@@ -673,26 +778,16 @@ export default function HomeClient() {
             });
 
             if (!response.ok) {
-              throw new Error("Error processing file"); // Triggers catch below
+              const body = (await response.json().catch(() => null)) as { error?: string; failures?: Array<{ file?: string; reason?: string }> } | null;
+              const firstFailure = body?.failures?.[0];
+              const detail = firstFailure?.reason
+                ? `${body?.error ?? "Error processing file."} ${firstFailure.reason}`
+                : body?.error ?? "Error processing file.";
+              throw new Error(detail);
             }
 
             const blob = await response.blob();
             const proposedName = parseContentDispositionFileName(response.headers.get("content-disposition"));
-
-            // Intelligent transparency validation logic
-            const hasTransparency = response.headers.get("x-has-transparency") === "true";
-            if (currentOptions.format === "jpeg" && hasTransparency) {
-              const confirm = window.confirm(
-                "Algunas de las imágenes que intentas convertir a JPEG tienen transparencia. " +
-                "JPEG no soporta transparencia y se reemplazará con un fondo blanco. " +
-                "¿Deseas continuar?"
-              );
-              if (!confirm) {
-                setQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "skipped" as const } : q));
-                failedFiles++; // Count as failed or skipped
-                continue; // Skip this file
-              }
-            }
 
             const originalNameWithoutExt = item.file.name.substring(0, item.file.name.lastIndexOf('.')) || item.file.name;
             const fallbackName = `resultado-${originalNameWithoutExt}.${currentOptions.format}`;
@@ -744,13 +839,13 @@ export default function HomeClient() {
         const payload = new FormData();
         queue.forEach((item) => {
           payload.append("files", item.file, item.file.name);
-          const currentOptions = { ...effectiveOptions, ...item.customOverrides };
-          if (item.isolatedFormat && !item.customOverrides?.format) {
-            currentOptions.format = item.isolatedFormat;
-          }
+          const currentOptions = resolveQueueItemOptions(item, effectiveOptions);
           payload.append("fileOptions", JSON.stringify(currentOptions));
         });
         payload.append("options", JSON.stringify(effectiveOptions));
+        if (backgroundAsset) {
+          payload.append("backgroundAsset", backgroundAsset.file, backgroundAsset.file.name);
+        }
 
         setStage("processing");
         const response = await fetch("/api/transform", {
@@ -760,8 +855,12 @@ export default function HomeClient() {
         });
 
         if (!response.ok) {
-          const body = (await response.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(body?.error ?? "Error inesperado al procesar archivos.");
+          const body = (await response.json().catch(() => null)) as { error?: string; failures?: Array<{ file?: string; reason?: string }> } | null;
+          const firstFailure = body?.failures?.[0];
+          const detail = firstFailure?.reason
+            ? `${body?.error ?? "Error inesperado al procesar archivos."} ${firstFailure.reason}`
+            : body?.error ?? "Error inesperado al procesar archivos.";
+          throw new Error(detail);
         }
 
         setStage("downloading");
@@ -958,12 +1057,9 @@ export default function HomeClient() {
                 setEditingItem(item);
                 setIsEditorOpen(true);
               }}
-              onMagic={(item) => {
-                setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, magicApplied: true } : q)));
-                setSuccessMessage(t.magicApplied.replace("{name}", item.file.name));
-                setTimeout(() => setSuccessMessage(null), 3000);
-              }}
               onRemoveIsolation={(id) => setQueue(prev => prev.map(q => q.id === id ? { ...q, isolatedFormat: undefined } : q))}
+              removeBackgroundEnabled={effectiveOptions.removeBackground}
+              onToggleRemoveBackground={() => setBatchRemoveBackground(!effectiveOptions.removeBackground)}
               options={effectiveOptions}
               lang={lang}
             />
@@ -990,6 +1086,9 @@ export default function HomeClient() {
                       quality: effectiveOptions.quality,
                       size: effectiveOptions.width || effectiveOptions.height ? `${effectiveOptions.width ?? "auto"} x ${effectiveOptions.height ?? "auto"}` : t.originalSize
                     }}
+                    backgroundImagePreviewUrl={backgroundAsset?.previewUrl ?? null}
+                    backgroundImageName={backgroundAsset?.file.name ?? null}
+                    onBackgroundImageChange={updateBackgroundAsset}
                     lang={lang}
                   />
                 ) : (
@@ -1004,6 +1103,9 @@ export default function HomeClient() {
                     customPresets={customPresets}
                     saveCustomPreset={saveCustomPreset}
                     deleteCustomPreset={deleteCustomPreset}
+                    backgroundImagePreviewUrl={backgroundAsset?.previewUrl ?? null}
+                    backgroundImageName={backgroundAsset?.file.name ?? null}
+                    onBackgroundImageChange={updateBackgroundAsset}
                     lang={lang}
                   />
                 )}
@@ -1048,7 +1150,7 @@ export default function HomeClient() {
                           <p className="text-sm font-bold">{t.transparencyWarningTitle}</p>
                           <p className="text-xs font-medium opacity-90 mt-1">
                             {lang === 'es'
-                              ? t.transparencyWarningDesc.replace("{count}", transparentFilesCount.toString()).replace("{plural}", transparentFilesCount === 1 ? 'imagen contiene' : 'imágenes contienen')
+                              ? t.transparencyWarningDesc.replace("{count}", transparentFilesCount.toString()).replace("{plural}", transparentFilesCount === 1 ? 'imagen perdera' : 'imagenes perderan')
                               : t.transparencyWarningDesc.replace("{count}", transparentFilesCount.toString())
                             }
                           </p>

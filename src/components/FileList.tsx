@@ -2,8 +2,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, FileImage, Trash2, SlidersHorizontal, CheckCircle2, AlertCircle, Loader2, AlertTriangle, TrendingDown, TrendingUp, Sparkles } from "lucide-react";
-import { TransformOptions, estimateImpact, formatBytes } from "@/lib/image-tools";
+import { X, FileImage, Trash2, SlidersHorizontal, CheckCircle2, AlertCircle, Loader2, AlertTriangle, Eraser } from "lucide-react";
+import { TransformOptions, estimateImpact } from "@/lib/image-tools";
 import { InfoTooltip } from "./InfoTooltip";
 
 interface QueueItem {
@@ -23,8 +23,9 @@ interface FileListProps {
     removeFile: (id: string) => void;
     clearAll: () => void;
     onEdit: (item: QueueItem) => void;
-    onMagic: (item: QueueItem) => void;
     onRemoveIsolation: (id: string) => void;
+    removeBackgroundEnabled: boolean;
+    onToggleRemoveBackground: () => void;
     options: TransformOptions;
     lang: "es" | "en";
 }
@@ -37,8 +38,9 @@ export function FileList({
     removeFile,
     clearAll,
     onEdit,
-    onMagic,
     onRemoveIsolation,
+    removeBackgroundEnabled,
+    onToggleRemoveBackground,
     options,
     lang,
 }: FileListProps) {
@@ -57,6 +59,7 @@ export function FileList({
         stripMetadata: { es: 'Quitar Metadatos', en: 'Strip Metadata' },
         withoutEnlargement: { es: 'Sin ampliar', en: 'Without Enlargement' },
         background: { es: 'Fondo', en: 'Background' },
+        removeBackground: { es: 'Eliminar fondo', en: 'Remove background' },
         lossless: { es: 'Sin pérdida', en: 'Lossless' },
         brightness: { es: 'Brillo', en: 'Brightness' },
         saturation: { es: 'Saturación', en: 'Saturation' },
@@ -82,7 +85,7 @@ export function FileList({
         if (item.isolatedFormat && !item.customOverrides?.format) {
             itemOpts.format = item.isolatedFormat;
         }
-        if (itemOpts.format === 'jpeg' && (item.file.type === 'image/png' || item.file.type === 'image/svg+xml')) return true;
+        if (itemOpts.format === 'jpeg' && (item.file.type === 'image/png' || item.file.type === 'image/svg+xml' || itemOpts.removeBackground)) return true;
         if (itemOpts.quality !== undefined && itemOpts.quality < 65 && item.file.size > 1024 * 1024) return true;
         if (itemOpts.blur !== undefined && itemOpts.blur > 5) return true;
         return false;
@@ -101,18 +104,33 @@ export function FileList({
 
     return (
         <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm font-medium text-[var(--ink-soft)]">
                     {lang === 'es' ? "Previsualización" : "Preview"} ({previewItems.length} {lang === 'es' ? "de" : "of"} {queue.length})
                 </p>
-                <button
-                    type="button"
-                    onClick={clearAll}
-                    className="flex items-center gap-1.5 rounded-full border border-transparent bg-[var(--danger)]/10 px-3 py-1 text-xs font-semibold text-[var(--danger)] transition hover:bg-[var(--danger)] hover:text-white"
-                >
-                    <Trash2 size={12} />
-                    {lang === 'es' ? "Vaciar cola" : "Clear queue"}
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={onToggleRemoveBackground}
+                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition ${removeBackgroundEnabled
+                            ? "border-transparent bg-[var(--accent)] text-white hover:brightness-110"
+                            : "border-[var(--line)] bg-white text-[var(--ink-soft)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                            }`}
+                    >
+                        <Eraser size={12} />
+                        {removeBackgroundEnabled
+                            ? (lang === 'es' ? "Quitar fondo activo" : "Background removal ON")
+                            : (lang === 'es' ? "Eliminar fondo en cola" : "Remove batch background")}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={clearAll}
+                        className="flex items-center gap-1.5 rounded-full border border-transparent bg-[var(--danger)]/10 px-3 py-1 text-xs font-semibold text-[var(--danger)] transition hover:bg-[var(--danger)] hover:text-white"
+                    >
+                        <Trash2 size={12} />
+                        {lang === 'es' ? "Vaciar cola" : "Clear queue"}
+                    </button>
+                </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">

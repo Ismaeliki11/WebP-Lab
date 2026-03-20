@@ -9,6 +9,7 @@ import { optimize } from "svgo";
 
 import { OutputFormat, TransformOptions, parseTransformOptions } from "@/lib/image-tools";
 import { decodeHeicToPngBuffer, encodeHeicFromImageBuffer } from "@/lib/heic-tools";
+import { removeBackgroundImage } from "@/lib/remove-bg";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,10 @@ interface RuntimeLimits {
   maxTotalInputMb: number;
   maxBatchFiles: number;
   concurrency: number;
+}
+
+interface SharedTransformAssets {
+  backgroundAsset: Buffer | null;
 }
 
 function readPositiveIntEnv(name: string, fallback: number): number {
@@ -169,6 +174,7 @@ async function transformOne(
   file: File,
   index: number,
   options: TransformOptions,
+  assets: SharedTransformAssets,
 ): Promise<FileTransformResult> {
   try {
     if (!isImageLike(file)) {
@@ -177,14 +183,16 @@ async function transformOne(
 
     const isSvg = file.type === "image/svg+xml" || file.name.endsWith(".svg");
     let input: Buffer = Buffer.from(await file.arrayBuffer());
+    let removeBgMimeType = file.type || "application/octet-stream";
+    let removeBgFileName = file.name;
 
     if (isHeicInput(file)) {
       input = await decodeHeicToPngBuffer(input);
+      removeBgMimeType = "image/png";
+      removeBgFileName = `${sanitizeBaseName(file.name)}.png`;
     }
 
-    // SVG Optimization path
-    if (isSvg && options.format === "png") { // If we want to keep it as vector or optimized raster
-      // Keep original for now or use svgo
+    if (isSvg && options.format === "png") {
       const result = optimize(input.toString(), {
         multipass: true,
         plugins: ['preset-default']
@@ -192,13 +200,32 @@ async function transformOne(
       if (result.data) input = Buffer.from(result.data);
     }
 
-    const metadata = await sharp(input, {
+    if (options.removeBackground && isSvg) {
+      input = await sharp(input, {
+        failOn: "none",
+        limitInputPixels: false,
+      }).png().toBuffer();
+      removeBgMimeType = "image/png";
+      removeBgFileName = `${sanitizeBaseName(file.name)}.png`;
+    }
+
+    const sourceMetadata = await sharp(input, {
       failOn: "none",
       limitInputPixels: false,
     }).metadata();
 
-    if (!metadata.format) {
+    if (!sourceMetadata.format) {
       throw new Error("El archivo no parece una imagen valida.");
+    }
+
+    if (options.removeBackground) {
+      input = await removeBackgroundImage({
+        fileName: removeBgFileName,
+        input,
+        mimeType: removeBgMimeType,
+        width: sourceMetadata.width,
+        height: sourceMetadata.height,
+      });
     }
 
     let image = sharp(input, {
@@ -213,7 +240,7 @@ async function transformOne(
         fit: options.fit,
         position: options.smartCrop ? sharp.strategy.entropy : undefined,
         withoutEnlargement: options.withoutEnlargement,
-        background: options.background ?? undefined,
+        background: options.removeBackground ? undefined : options.background ?? undefined,
       });
     }
 
@@ -265,6 +292,55 @@ async function transformOne(
       image = image.sharpen();
     }
 
+    if (options.removeBackground && options.backgroundMode !== "transparent") {
+      const subjectLayer = await image.ensureAlpha().png().toBuffer({ resolveWithObject: true });
+      const { width = sourceMetadata.width, height = sourceMetadata.height } = subjectLayer.info;
+
+      if (!width || !height) {
+        throw new Error("No se pudo calcular el tamaño final del recorte.");
+      }
+
+      if (options.backgroundMode === "image") {
+        if (!assets.backgroundAsset) {
+          throw new Error("Has elegido un fondo por imagen, pero no has cargado ninguna imagen de fondo.");
+        }
+
+        image = sharp(assets.backgroundAsset, {
+          failOn: "none",
+          limitInputPixels: false,
+        })
+          .rotate()
+          .resize({
+            width,
+            height,
+            fit: "cover",
+          })
+          .ensureAlpha()
+          .composite([
+            {
+              input: subjectLayer.data,
+              left: 0,
+              top: 0,
+            },
+          ]);
+      } else {
+        image = sharp({
+          create: {
+            width,
+            height,
+            channels: 4,
+            background: options.background ?? "#ffffff",
+          },
+        }).composite([
+          {
+            input: subjectLayer.data,
+            left: 0,
+            top: 0,
+          },
+        ]);
+      }
+    }
+
     if (options.watermarkText) {
       const svgWatermark = Buffer.from(`
         <svg width="800" height="200">
@@ -291,6 +367,12 @@ async function transformOne(
 
     if (!options.stripMetadata) {
       image = image.withMetadata();
+    }
+
+    if (options.format === "jpeg") {
+      image = image.flatten({
+        background: options.background ?? "#ffffff",
+      });
     }
 
     if (options.format === "webp") {
@@ -335,7 +417,7 @@ async function transformOne(
     // Determine final name
     const safeBaseName = sanitizeBaseName(file.name);
     const finalBaseName = options.renamePattern
-      ? resolveRenamePattern(options.renamePattern, file.name, options, options.width || metadata.width, options.height || metadata.height)
+      ? resolveRenamePattern(options.renamePattern, file.name, options, options.width || sourceMetadata.width, options.height || sourceMetadata.height)
       : safeBaseName;
 
     return {
@@ -391,6 +473,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const files = formData
       .getAll("files")
       .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const backgroundAssetEntry = formData.get("backgroundAsset");
 
     if (files.length === 0) {
       return toErrorResponse(400, "No images received.");
@@ -431,6 +514,20 @@ export async function POST(req: NextRequest): Promise<Response> {
     const globalOptionsParsed = globalOptionsField ? parseOptionsField(globalOptionsField) : parseTransformOptions({});
     if (globalOptionsParsed instanceof Response) return globalOptionsParsed;
 
+    let sharedAssets: SharedTransformAssets = {
+      backgroundAsset: null,
+    };
+
+    if (backgroundAssetEntry instanceof File && backgroundAssetEntry.size > 0) {
+      if (!isImageLike(backgroundAssetEntry)) {
+        return toErrorResponse(400, "La imagen de fondo no tiene un formato compatible.");
+      }
+
+      sharedAssets = {
+        backgroundAsset: Buffer.from(await backgroundAssetEntry.arrayBuffer()),
+      };
+    }
+
     const results = await mapWithConcurrency(
       files,
       limits.concurrency,
@@ -440,7 +537,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           const parsed = parseOptionsField(fileOptionsFields[index]);
           if (!(parsed instanceof Response)) fileOpts = parsed;
         }
-        return transformOne(file, index, fileOpts);
+        return transformOne(file, index, fileOpts, sharedAssets);
       }
     );
 

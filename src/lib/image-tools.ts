@@ -1,8 +1,10 @@
 export const OUTPUT_FORMATS = ["webp", "avif", "jpeg", "png", "heic"] as const;
 export const RESIZE_FITS = ["cover", "contain", "fill", "inside", "outside"] as const;
+export const BACKGROUND_MODES = ["transparent", "solid", "image"] as const;
 
 export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 export type ResizeFit = (typeof RESIZE_FITS)[number];
+export type BackgroundMode = (typeof BACKGROUND_MODES)[number];
 
 export interface TransformOptions {
   format: OutputFormat;
@@ -19,6 +21,8 @@ export interface TransformOptions {
   stripMetadata: boolean;
   withoutEnlargement: boolean;
   background: string | null;
+  removeBackground: boolean;
+  backgroundMode: BackgroundMode;
   lossless: boolean;
   // Professional Adjustments
   brightness: number;
@@ -63,6 +67,8 @@ export const DEFAULT_OPTIONS: TransformOptions = {
   stripMetadata: true,
   withoutEnlargement: true,
   background: null,
+  removeBackground: false,
+  backgroundMode: "transparent",
   lossless: false,
   brightness: 1,
   saturation: 1,
@@ -190,6 +196,10 @@ function isResizeFit(value: unknown): value is ResizeFit {
   return RESIZE_FITS.includes(value as ResizeFit);
 }
 
+function isBackgroundMode(value: unknown): value is BackgroundMode {
+  return BACKGROUND_MODES.includes(value as BackgroundMode);
+}
+
 export function parseTransformOptions(raw: unknown): TransformOptions {
   const source =
     typeof raw === "object" && raw !== null ? (raw as Record<string, unknown>) : {};
@@ -223,6 +233,8 @@ export function parseTransformOptions(raw: unknown): TransformOptions {
     stripMetadata: toBool(source.stripMetadata, DEFAULT_OPTIONS.stripMetadata),
     withoutEnlargement: toBool(source.withoutEnlargement, DEFAULT_OPTIONS.withoutEnlargement),
     background: toBackgroundColor(source.background),
+    removeBackground: toBool(source.removeBackground, DEFAULT_OPTIONS.removeBackground),
+    backgroundMode: isBackgroundMode(source.backgroundMode) ? source.backgroundMode : DEFAULT_OPTIONS.backgroundMode,
     lossless: toBool(source.lossless, DEFAULT_OPTIONS.lossless),
     brightness: Number.isFinite(brightnessInput) ? clamp(brightnessInput, 0, 3) : DEFAULT_OPTIONS.brightness,
     saturation: Number.isFinite(saturationInput) ? clamp(saturationInput, 0, 3) : DEFAULT_OPTIONS.saturation,

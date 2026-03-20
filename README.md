@@ -37,6 +37,7 @@ The primary goal of WebP Lab is to provide web designers and developers with a s
 ### 2. Dual Work Modes
 *   Easy Mode (Smart Presets): Preconfigured profiles for specific goals (Fast Web, Social Media, Max Quality). Ideal for users seeking speed without technical complexities.
 *   Expert Mode (Manual Control): Absolute control over compression parameters, chroma subsampling, metadata, and advanced filters.
+*   AI Background Removal: Optional `remove.bg` integration for high-quality subject cutouts in both modes, including whole-queue batch application.
 
 ### 3. Professional Editing Engine
 *   Color Adjustments: Brightness, contrast, saturation, gamma, and hue.
@@ -109,6 +110,7 @@ Available variables:
 *   `MAX_TOTAL_INPUT_MB`: Limit for the entire batch size (0 for unlimited).
 *   `MAX_BATCH_FILES`: Maximum number of files processed per request.
 *   `TRANSFORM_CONCURRENCY`: Number of concurrent workers for the Sharp engine.
+*   `REMOVE_BG_API_KEY`: Optional API key for `remove.bg` background removal. If omitted, the app falls back to a local background-removal model.
 *   `HEIF_ENC_PATH`: Absolute path to `heif-enc` for generating real `.heic` output.
 *   `HEIF_DEC_PATH`: Absolute path to `heif-dec` for decoding `.heic` / `.heif` inputs.
 

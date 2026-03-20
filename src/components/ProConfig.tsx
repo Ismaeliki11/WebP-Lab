@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Settings2, SlidersHorizontal, Save, X, Type, FileText, Hash, Calendar, Sparkles, RefreshCw, Scissors, Info } from "lucide-react";
 import { TransformOptions, TransformPreset, PRESETS, OUTPUT_FORMATS, RESIZE_FITS } from "@/lib/image-tools";
 import { InfoTooltip, InfoNote } from "./InfoTooltip";
@@ -16,6 +16,9 @@ interface ProConfigProps {
     customPresets: TransformPreset[];
     saveCustomPreset: (name: string, options: TransformOptions) => void;
     deleteCustomPreset: (id: string) => void;
+    backgroundImagePreviewUrl: string | null;
+    backgroundImageName: string | null;
+    onBackgroundImageChange: (file: File | null) => void;
     lang: "es" | "en";
 }
 
@@ -31,6 +34,9 @@ export function ProConfig({
     customPresets,
     saveCustomPreset,
     deleteCustomPreset,
+    backgroundImagePreviewUrl,
+    backgroundImageName,
+    onBackgroundImageChange,
     lang,
 }: ProConfigProps) {
     const [newPresetName, setNewPresetName] = useState("");
@@ -447,6 +453,21 @@ export function ProConfig({
                         { key: "flip", label: "Flip V", tooltip: lang === 'es' ? "Voltea boca abajo." : "Flips upside down." },
                         { key: "flop", label: "Flip H", tooltip: lang === 'es' ? "Efecto espejo." : "Horizontal mirror." },
                         {
+                            key: "removeBackground", label: lang === 'es' ? "Sin fondo" : "No Background", tooltipNative: true, tooltip: lang === 'es' ? (
+                                <div className="space-y-2">
+                                    <p>Elimina automaticamente el fondo usando <strong>remove.bg</strong> y mantiene transparencia para todo el lote.</p>
+                                    <p>Es la opcion mas potente para recortes complejos de personas, productos y objetos.</p>
+                                    <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10">Si existe <code>REMOVE_BG_API_KEY</code> usara remove.bg; si no, la app cae automaticamente al motor local. Si exportas a JPEG, la transparencia final se convertira en un fondo solido.</InfoNote>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <p>Automatically removes the background using <strong>remove.bg</strong> and keeps transparency across the whole batch.</p>
+                                    <p>This is the strongest option for complex cutouts on people, products, and objects.</p>
+                                    <InfoNote className="!mt-3 text-[var(--ink-0)] border-[var(--accent)]/30 bg-[var(--accent)]/10">If <code>REMOVE_BG_API_KEY</code> exists it will use remove.bg; otherwise the app falls back to the local engine. If you export to JPEG, the final transparency becomes a solid background.</InfoNote>
+                                </div>
+                            )
+                        },
+                        {
                             key: "stripMetadata", label: lang === 'es' ? "No meta" : "No Meta", tooltipNative: true, tooltip: lang === 'es' ? (
                                 <div className="space-y-2">
                                     <p>Elimina todos los "datos extra ocultos" (metadatos) que vienen incrustados dentro de la fotografía original, como por ejemplo:</p>
@@ -520,6 +541,150 @@ export function ProConfig({
                         </label>
                     ))}
                 </motion.div>
+
+                <AnimatePresence initial={false}>
+                    {options.removeBackground && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0, y: -8 }}
+                            animate={{ opacity: 1, height: "auto", y: 0 }}
+                            exit={{ opacity: 0, height: 0, y: -8 }}
+                            transition={{ duration: 0.22, ease: "easeOut" }}
+                            className="space-y-4 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--bg-soft)] p-6"
+                        >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)]">
+                                    {lang === 'es' ? "Fondo tras eliminarlo" : "Background after removal"}
+                                </p>
+                                <p className="mt-1 text-sm font-medium text-[var(--ink-soft)]">
+                                    {lang === 'es'
+                                        ? "Aplica el mismo fondo nuevo a todas las imagenes procesadas del lote."
+                                        : "Apply the same new background to every processed image in the batch."}
+                                </p>
+                            </div>
+                            <InfoTooltip
+                                lang={lang}
+                                title={lang === 'es' ? "Fondo tras eliminarlo" : "Background after removal"}
+                                content={
+                                    <div className="space-y-2">
+                                        <p>{lang === 'es'
+                                            ? "Transparente mantiene el recorte limpio. Color solido rellena con un tono unico. Imagen reutiliza el mismo archivo para toda la cola."
+                                            : "Transparent keeps the clean cutout. Solid color fills with one tone. Image reuses the same file for the entire queue."}</p>
+                                        <p>{lang === 'es'
+                                            ? "Si eliges imagen, se adaptara automaticamente al tamano final de cada exportacion."
+                                            : "If you choose image, it will be automatically fitted to each export's final size."}</p>
+                                    </div>
+                                }
+                            />
+                        </div>
+
+                        <div className="grid gap-2 sm:grid-cols-3">
+                            {[
+                                { value: "transparent", label: lang === 'es' ? "Transparente" : "Transparent" },
+                                { value: "solid", label: lang === 'es' ? "Color solido" : "Solid color" },
+                                { value: "image", label: lang === 'es' ? "Imagen" : "Image" },
+                            ].map((mode) => {
+                                const selected = options.backgroundMode === mode.value;
+                                return (
+                                    <button
+                                        key={mode.value}
+                                        type="button"
+                                        onClick={() => setOptions((prev) => parseOptions({ ...prev, backgroundMode: mode.value }))}
+                                        className={`rounded-2xl border px-4 py-3 text-sm font-bold transition-all ${selected
+                                            ? "border-[var(--accent)] bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/15"
+                                            : "border-[var(--line)] bg-white text-[var(--ink-soft)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                                            }`}
+                                    >
+                                        {mode.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {options.backgroundMode === "solid" && (
+                            <div className="grid gap-3 sm:grid-cols-[auto,1fr]">
+                                <label className="block">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)]">
+                                        {lang === 'es' ? "Color de fondo" : "Background color"}
+                                    </span>
+                                    <input
+                                        type="color"
+                                        value={options.background ?? "#ffffff"}
+                                        onChange={(event) =>
+                                            setOptions((prev) => parseOptions({ ...prev, background: event.target.value }))
+                                        }
+                                        className="mt-1.5 h-12 w-16 rounded-xl border border-[var(--line)] bg-white p-1"
+                                    />
+                                </label>
+
+                                <label className="block">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)]">
+                                        {lang === 'es' ? "Color de fondo (hex)" : "Background color (hex)"}
+                                    </span>
+                                    <input
+                                        type="text"
+                                        placeholder="#ffffff"
+                                        value={options.background ?? ""}
+                                        onChange={(event) =>
+                                            setOptions((prev) => parseOptions({ ...prev, background: event.target.value }))
+                                        }
+                                        className="mt-1.5 w-full rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-mono shadow-sm outline-none focus:border-[var(--accent)]"
+                                    />
+                                </label>
+                            </div>
+                        )}
+
+                        {options.backgroundMode === "image" && (
+                            <div className="space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-wider text-[var(--ink-soft)]">
+                                            {lang === 'es' ? "Imagen compartida" : "Shared image"}
+                                        </p>
+                                        <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                                            {backgroundImageName ?? (lang === 'es' ? "Aun no has cargado ninguna imagen de fondo." : "No background image uploaded yet.")}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <label className="cursor-pointer rounded-full bg-[var(--accent)] px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[var(--accent-2)]">
+                                            {lang === 'es' ? "Elegir imagen" : "Choose image"}
+                                            <input
+                                                type="file"
+                                                accept="image/*,.heic,.heif"
+                                                className="hidden"
+                                                onChange={(event) => {
+                                                    onBackgroundImageChange(event.target.files?.[0] ?? null);
+                                                    event.target.value = "";
+                                                }}
+                                            />
+                                        </label>
+                                        {backgroundImageName && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onBackgroundImageChange(null)}
+                                                className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs font-bold text-[var(--ink-soft)] transition-colors hover:border-[var(--danger)] hover:text-[var(--danger)]"
+                                            >
+                                                {lang === 'es' ? "Quitar imagen" : "Remove image"}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {backgroundImagePreviewUrl && (
+                                    <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
+                                        <img
+                                            src={backgroundImagePreviewUrl}
+                                            alt={backgroundImageName ?? (lang === 'es' ? "Imagen de fondo" : "Background image")}
+                                            className="h-44 w-full object-cover"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <motion.div variants={item} className="space-y-6">
                     <div className="rounded-[2rem] bg-[var(--bg-soft)] p-8 border border-[var(--line)] space-y-6">
