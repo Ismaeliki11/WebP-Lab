@@ -67,6 +67,7 @@ interface EasySettings {
   size: EasySize;
   stripMetadata: boolean;
   withoutEnlargement: boolean;
+  removeBackground: boolean;
 }
 
 const ROTATION_OPTIONS: Array<TransformOptions["rotate"]> = [0, 90, 180, 270];
@@ -82,6 +83,7 @@ const DEFAULT_EASY_SETTINGS: EasySettings = {
   size: "original",
   stripMetadata: true,
   withoutEnlargement: true,
+  removeBackground: false,
 };
 
 function isImageFile(file: File): boolean {
@@ -130,6 +132,7 @@ function parseEasySettings(raw: unknown): EasySettings {
     size: size === "original" || size === "1920" || size === "1200" || size === "800" ? size : "original",
     stripMetadata: typeof source.stripMetadata === "boolean" ? source.stripMetadata : true,
     withoutEnlargement: typeof source.withoutEnlargement === "boolean" ? source.withoutEnlargement : true,
+    removeBackground: typeof source.removeBackground === "boolean" ? source.removeBackground : false,
   };
 }
 
@@ -151,6 +154,7 @@ function buildOptionsFromEasy(settings: EasySettings): TransformOptions {
     fit: sizeMap[settings.size].fit,
     stripMetadata: settings.stripMetadata,
     withoutEnlargement: settings.withoutEnlargement,
+    removeBackground: settings.removeBackground,
     lossless: false,
   };
 

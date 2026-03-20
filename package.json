@@ -10,6 +10,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@imgly/background-removal-node": "^1.4.5",
     "framer-motion": "^12.34.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.563.0",

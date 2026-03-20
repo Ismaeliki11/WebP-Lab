@@ -443,6 +443,7 @@ export function ProConfig({
                         { key: "sepia", label: "Sepia", tooltip: lang === 'es' ? "Tono vintage amarillento." : "Vintage yellowish tone." },
                         { key: "sharpen", label: lang === 'es' ? "Enfocar" : "Sharpen", tooltip: lang === 'es' ? "Mejora bordes y nitidez." : "Enhances edges and sharpness." },
                         { key: "smartCrop", label: "Smart Crop", tooltip: lang === 'es' ? "Centra el recorte en lo importante." : "Centers crop on subject." },
+                        { key: "removeBackground", label: lang === 'es' ? "Sin Fondo" : "No BG", tooltip: lang === 'es' ? "Usa IA local para eliminar el fondo de forma extremadamente rápida." : "Uses local AI to remove the background extremely fast." },
                         { key: "flip", label: "Flip V", tooltip: lang === 'es' ? "Voltea boca abajo." : "Flips upside down." },
                         { key: "flop", label: "Flip H", tooltip: lang === 'es' ? "Efecto espejo." : "Horizontal mirror." },
                         {

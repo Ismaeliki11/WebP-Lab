@@ -39,6 +39,7 @@ export interface TransformOptions {
   watermarkMetadata: boolean;
   seoFriendly: boolean;
   renamePattern: string | null;
+  removeBackground: boolean;
 }
 
 export interface TransformPreset {
@@ -81,6 +82,7 @@ export const DEFAULT_OPTIONS: TransformOptions = {
   watermarkMetadata: false,
   seoFriendly: true,
   renamePattern: "[name]",
+  removeBackground: false,
 };
 
 export const PRESETS: TransformPreset[] = [
@@ -241,6 +243,7 @@ export function parseTransformOptions(raw: unknown): TransformOptions {
     watermarkMetadata: toBool(source.watermarkMetadata, DEFAULT_OPTIONS.watermarkMetadata),
     seoFriendly: toBool(source.seoFriendly, DEFAULT_OPTIONS.seoFriendly),
     renamePattern: typeof source.renamePattern === "string" ? source.renamePattern : DEFAULT_OPTIONS.renamePattern,
+    removeBackground: toBool(source.removeBackground, DEFAULT_OPTIONS.removeBackground),
   };
 }
 

@@ -5,6 +5,7 @@ import JSZip from "jszip";
 import { NextRequest } from "next/server";
 import sharp from "sharp";
 import { optimize } from "svgo";
+import { removeBackground } from "@imgly/background-removal-node";
 
 import { OutputFormat, TransformOptions, parseTransformOptions } from "@/lib/image-tools";
 
@@ -169,6 +170,14 @@ async function transformOne(
 
     const isSvg = file.type === "image/svg+xml" || file.name.endsWith(".svg");
     let input = Buffer.from(await file.arrayBuffer());
+
+    if (options.removeBackground) {
+      if (isSvg) {
+        throw new Error("Cannot remove background from SVG files.");
+      }
+      const bgRemovedBlob = await removeBackground(file);
+      input = Buffer.from(await bgRemovedBlob.arrayBuffer());
+    }
 
     // SVG Optimization path
     if (isSvg && options.format === "png") { // If we want to keep it as vector or optimized raster

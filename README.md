@@ -47,7 +47,11 @@ The primary goal of WebP Lab is to provide web designers and developers with a s
 *   Dynamic Watermarking: Batch apply text watermarks with control over opacity, size, position, and repeating patterns.
 *   SEO Naming Patterns: Dynamic name generator using tags like [name], [width], [height], [format], and [date].
 
-### 5. Efficient Workflow
+### 5. AI Background Removal
+*   Automatic Subject Isolation: Powered by local neural networks (@imgly/background-removal-node).
+*   Batch Elimination: Instantly strip backgrounds across dozens of images in parallel to maintain isolated layers/transparent outputs.
+
+### 6. Efficient Workflow
 *   Batch Processing: Upload multiple files and process them in a single asynchronous pipeline.
 *   Flexible Download Options: Individual downloads, ZIP packaging, or direct saving to local folders (via File System Access API).
 *   Session History: Persistent log of achieved savings and completed tasks.
@@ -60,6 +64,7 @@ This application uses a modern technology stack to ensure maximum performance:
 
 *   **Framework:** Next.js (React 19) with App Router.
 *   **Image Processing:** Sharp (the gold standard in Node.js for high performance).
+*   **AI Background Removal:** @imgly/background-removal-node (local ONNX runtime execution for absolute privacy and speed).
 *   **Styling:** Vanilla CSS with Tailwind CSS v4 support for dynamic utilities.
 *   **Animations:** Framer Motion for a fluid and reactive user experience.
 *   **Iconography:** Lucide React.

@@ -14,6 +14,7 @@ interface EasySettings {
     size: EasySize;
     stripMetadata: boolean;
     withoutEnlargement: boolean;
+    removeBackground: boolean;
 }
 
 interface EasyConfigProps {
@@ -57,6 +58,7 @@ export function EasyConfig({
             compressionLevel: "Nivel de Compresión",
             stripMetadata: "Quitar metadata",
             withoutEnlargement: "No ampliar",
+            removeBackground: "Eliminar fondo",
             liveConfig: "Configuración en vivo",
             liveFormat: "Formato",
             liveQuality: "Calidad",
@@ -77,6 +79,7 @@ export function EasyConfig({
             compressionLevel: "Compression Level",
             stripMetadata: "Strip metadata",
             withoutEnlargement: "No enlargement",
+            removeBackground: "Remove background",
             liveConfig: "Live Settings",
             liveFormat: "Format",
             liveQuality: "Quality",
@@ -231,6 +234,7 @@ export function EasyConfig({
 
             <motion.div variants={item} className="grid grid-cols-2 gap-3">
                 {[
+                    { key: "removeBackground", label: t.removeBackground },
                     { key: "stripMetadata", label: t.stripMetadata },
                     { key: "withoutEnlargement", label: t.withoutEnlargement },
                 ].map((opt) => (
@@ -260,6 +264,19 @@ export function EasyConfig({
                         </div>
                         <span className="flex items-center gap-2 text-xs font-bold text-[var(--ink-soft)] select-none">
                             {opt.label}
+                            {opt.key === 'removeBackground' && (
+                                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                                    <InfoTooltip lang={lang}
+                                        title={lang === 'es' ? "Eliminar fondo con IA" : "Remove background with AI"}
+                                        content={
+                                            <div className="space-y-2">
+                                                <p>{lang === 'es' ? "Usa inteligencia artificial para recortar automáticamente el sujeto principal y eliminar el fondo." : "Uses AI to automatically crop the main subject and remove the background."}</p>
+                                                <p>{lang === 'es' ? "¡Extremadamente rápido usando tu ordenador y 100% privado!" : "Extremely fast using your computer and 100% private!"}</p>
+                                            </div>
+                                        }
+                                    />
+                                </div>
+                            )}
                             {opt.key === 'stripMetadata' && (
                                 <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                                     <InfoTooltip lang={lang}
