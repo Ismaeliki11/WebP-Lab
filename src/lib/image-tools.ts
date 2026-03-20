@@ -1,4 +1,4 @@
-export const OUTPUT_FORMATS = ["webp", "avif", "jpeg", "png"] as const;
+export const OUTPUT_FORMATS = ["webp", "avif", "jpeg", "png", "heic"] as const;
 export const RESIZE_FITS = ["cover", "contain", "fill", "inside", "outside"] as const;
 
 export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
@@ -280,6 +280,7 @@ export function estimateImpact(inputBytes: number, format: OutputFormat, quality
 
   let baseMultiplier = 1.0;
   if (format === 'avif') baseMultiplier = 0.4;
+  else if (format === 'heic') baseMultiplier = 0.55;
   else if (format === 'webp') baseMultiplier = 0.5;
   else if (format === 'jpeg') baseMultiplier = 0.7;
   else if (format === 'png') baseMultiplier = 0.9;

@@ -44,7 +44,7 @@ interface QueueItem {
   file: File;
   previewUrl: string;
   status?: "idle" | "processing" | "done" | "error" | "skipped";
-  isolatedFormat?: "webp" | "avif" | "jpeg" | "png";
+  isolatedFormat?: TransformOptions["format"];
   customOverrides?: Partial<TransformOptions>;
 }
 
@@ -74,6 +74,22 @@ const OPTIONS_STORAGE_KEY = "webp-lab.options.v2";
 const EASY_STORAGE_KEY = "webp-lab.easy.v1";
 const MODE_STORAGE_KEY = "webp-lab.mode.v1";
 const MAX_PREVIEW_ITEMS = 8;
+const IMAGE_FILE_NAME_RE = /\.(avif|bmp|gif|heic|heif|jpe?g|png|svg|tiff?|webp)$/i;
+const HEIC_FILE_NAME_RE = /\.(heic|heif)$/i;
+const HEIC_PREVIEW_PLACEHOLDER = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540">
+    <defs>
+      <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0%" stop-color="#eff6ff"/>
+        <stop offset="100%" stop-color="#e2e8f0"/>
+      </linearGradient>
+    </defs>
+    <rect width="960" height="540" fill="url(#bg)"/>
+    <rect x="70" y="70" width="820" height="400" rx="34" fill="#ffffff" stroke="#cbd5e1" stroke-width="8"/>
+    <text x="120" y="230" fill="#0f172a" font-family="Arial, sans-serif" font-size="92" font-weight="700">HEIC</text>
+    <text x="120" y="315" fill="#475569" font-family="Arial, sans-serif" font-size="36">Vista previa generada por el servidor</text>
+  </svg>
+`)}`;
 
 const DEFAULT_EASY_SETTINGS: EasySettings = {
   goal: "balanced",
@@ -85,7 +101,17 @@ const DEFAULT_EASY_SETTINGS: EasySettings = {
 };
 
 function isImageFile(file: File): boolean {
-  return file.type.startsWith("image/");
+  return file.type.startsWith("image/") || IMAGE_FILE_NAME_RE.test(file.name);
+}
+
+function isHeicLikeFile(file: File): boolean {
+  return file.type === "image/heic" || file.type === "image/heif" || HEIC_FILE_NAME_RE.test(file.name);
+}
+
+function revokePreviewUrl(url: string): void {
+  if (url.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
+  }
 }
 
 function parseContentDispositionFileName(contentDisposition: string | null): string | null {
@@ -161,7 +187,7 @@ function buildOptionsFromEasy(settings: EasySettings): TransformOptions {
     merged = {
       ...merged,
       quality: Math.max(90, qualityByCompression[settings.compressionLevel]),
-      lossless: settings.format === "png" || settings.format === "webp",
+      lossless: settings.format === "png" || settings.format === "webp" || settings.format === "heic",
       stripMetadata: false,
     };
   }
@@ -181,7 +207,7 @@ const TRANSLATIONS = {
   es: {
     heroBadge: "WebP Lab Pro Edition",
     heroTitle: "Optimización de imágenes sin límites.",
-    heroDesc: "Pipeline de conversión profesional con soporte para WebP, AVIF y JPEG. Rápido, seguro y diseñado para diseñadores.",
+    heroDesc: "Pipeline de conversión profesional con soporte para WebP, AVIF, JPEG y HEIC. Rápido, seguro y diseñado para diseñadores.",
     modeEasy: "Modo Fácil",
     modePro: "Modo Experto",
     step1: "Cargar",
@@ -232,7 +258,7 @@ const TRANSLATIONS = {
   en: {
     heroBadge: "WebP Lab Pro Edition",
     heroTitle: "Limitless image optimization.",
-    heroDesc: "Professional conversion pipeline with WebP, AVIF, and JPEG support. Fast, secure, and built for designers.",
+    heroDesc: "Professional conversion pipeline with WebP, AVIF, JPEG, and HEIC support. Fast, secure, and built for designers.",
     modeEasy: "Easy Mode",
     modePro: "Pro Mode",
     step1: "Upload",
@@ -317,9 +343,31 @@ export default function HomeClient() {
 
   const abortRef = useRef<AbortController | null>(null);
   const queueRef = useRef<QueueItem[]>([]);
+  const heicPreviewRequestsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     queueRef.current = queue;
+  }, [queue]);
+
+  useEffect(() => {
+    queue.forEach((item) => {
+      if (!isHeicLikeFile(item.file)) {
+        return;
+      }
+
+      if (item.previewUrl !== HEIC_PREVIEW_PLACEHOLDER) {
+        return;
+      }
+
+      if (heicPreviewRequestsRef.current.has(item.id)) {
+        return;
+      }
+
+      heicPreviewRequestsRef.current.add(item.id);
+      void hydrateHeicPreview(item.id, item.file).finally(() => {
+        heicPreviewRequestsRef.current.delete(item.id);
+      });
+    });
   }, [queue]);
 
   useEffect(() => {
@@ -381,7 +429,7 @@ export default function HomeClient() {
 
   useEffect(() => {
     return () => {
-      queueRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      queueRef.current.forEach((item) => revokePreviewUrl(item.previewUrl));
       abortRef.current?.abort();
     };
   }, []);
@@ -416,6 +464,60 @@ export default function HomeClient() {
   const previewItems = queue.slice(0, MAX_PREVIEW_ITEMS);
   const hiddenPreviewCount = Math.max(0, queue.length - previewItems.length);
 
+  const generateHeicPreview = async (file: File): Promise<string> => {
+    const payload = new FormData();
+    payload.append("files", file, file.name);
+    payload.append(
+      "options",
+      JSON.stringify({
+        format: "png",
+        width: 640,
+        height: 640,
+        fit: "inside",
+        stripMetadata: true,
+        withoutEnlargement: true,
+      }),
+    );
+
+    const response = await fetch("/api/transform", {
+      method: "POST",
+      body: payload,
+    });
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(body?.error ?? "No se pudo generar la vista previa HEIC.");
+    }
+
+    return URL.createObjectURL(await response.blob());
+  };
+
+  const hydrateHeicPreview = async (id: string, file: File): Promise<void> => {
+    try {
+      const nextPreviewUrl = await generateHeicPreview(file);
+      if (!queueRef.current.some((item) => item.id === id)) {
+        revokePreviewUrl(nextPreviewUrl);
+        return;
+      }
+
+      setQueue((prev) =>
+        prev.map((item) => {
+          if (item.id !== id) {
+            return item;
+          }
+
+          revokePreviewUrl(item.previewUrl);
+          return {
+            ...item,
+            previewUrl: nextPreviewUrl,
+          };
+        }),
+      );
+    } catch (previewError) {
+      console.warn("HEIC preview fallback failed", previewError);
+    }
+  };
+
   const addFiles = (incomingFiles: File[]): void => {
     const filtered = incomingFiles.filter(isImageFile);
     if (filtered.length === 0) {
@@ -430,11 +532,16 @@ export default function HomeClient() {
       filtered.forEach((file) => {
         const id = `${file.name}-${file.size}-${file.lastModified}`;
         if (!existingIds.has(id)) {
-          additions.push({ id, file, previewUrl: URL.createObjectURL(file) });
+          additions.push({
+            id,
+            file,
+            previewUrl: isHeicLikeFile(file) ? HEIC_PREVIEW_PLACEHOLDER : URL.createObjectURL(file),
+          });
         }
       });
       return [...prev, ...additions];
     });
+
   };
 
   const handleFileInput = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -452,14 +559,14 @@ export default function HomeClient() {
   const removeFile = (id: string): void => {
     setQueue((prev) => {
       const target = prev.find((item) => item.id === id);
-      if (target) URL.revokeObjectURL(target.previewUrl);
+      if (target) revokePreviewUrl(target.previewUrl);
       return prev.filter((item) => item.id !== id);
     });
   };
 
   const clearAll = (): void => {
     setQueue((prev) => {
-      prev.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      prev.forEach((item) => revokePreviewUrl(item.previewUrl));
       return [];
     });
   };
@@ -842,7 +949,7 @@ export default function HomeClient() {
               formatBytes={formatBytes}
               removeFile={removeFile}
               clearAll={() => {
-                setQueue([]);
+                clearAll();
                 setStage("idle");
                 setHistory([]);
                 localStorage.removeItem("webp-lab.history.v1");

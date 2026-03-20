@@ -29,9 +29,10 @@ The primary goal of WebP Lab is to provide web designers and developers with a s
 ## Key Features
 
 ### 1. Intelligent Multi-Format Conversion
-*   Full support for WebP, AVIF, JPEG, and PNG.
+*   Full support for WebP, AVIF, JPEG, PNG, and HEIC/HEIF.
 *   Real-time file size impact estimation before download.
 *   Automatic transparency detection and compatibility alerts.
+*   Server-generated HEIC previews so browsers without native HEIC rendering can still show thumbnails correctly.
 
 ### 2. Dual Work Modes
 *   Easy Mode (Smart Presets): Preconfigured profiles for specific goals (Fast Web, Social Media, Max Quality). Ideal for users seeking speed without technical complexities.
@@ -59,7 +60,7 @@ The primary goal of WebP Lab is to provide web designers and developers with a s
 This application uses a modern technology stack to ensure maximum performance:
 
 *   **Framework:** Next.js (React 19) with App Router.
-*   **Image Processing:** Sharp (the gold standard in Node.js for high performance).
+*   **Image Processing:** Sharp for the main pipeline plus `libheif` tools (`heif-enc` / `heif-dec`) for HEIC input/output.
 *   **Styling:** Vanilla CSS with Tailwind CSS v4 support for dynamic utilities.
 *   **Animations:** Framer Motion for a fluid and reactive user experience.
 *   **Iconography:** Lucide React.
@@ -84,6 +85,7 @@ As an engineering piece, **WebP Lab** solves several common challenges in web to
 ### Prerequisites
 1.  Node.js: Version 18.x or higher is required.
 2.  Package Manager: npm (comes with Node.js) or yarn/pnpm.
+3.  For HEIC/HEIF support: `heif-enc` and `heif-dec` must be available either through `HEIF_ENC_PATH` / `HEIF_DEC_PATH` or inside a local `.tools/` folder.
 
 ### 1. Clone the Repository
 ```bash
@@ -107,6 +109,15 @@ Available variables:
 *   `MAX_TOTAL_INPUT_MB`: Limit for the entire batch size (0 for unlimited).
 *   `MAX_BATCH_FILES`: Maximum number of files processed per request.
 *   `TRANSFORM_CONCURRENCY`: Number of concurrent workers for the Sharp engine.
+*   `HEIF_ENC_PATH`: Absolute path to `heif-enc` for generating real `.heic` output.
+*   `HEIF_DEC_PATH`: Absolute path to `heif-dec` for decoding `.heic` / `.heif` inputs.
+
+### HEIC Runtime Notes
+If you want `.heic` conversion to work on a fresh clone, install a `libheif` build that includes both `heif-enc` and `heif-dec`.
+
+Tested setup on Windows:
+*   Place the extracted `libheif` binaries inside `.tools/libheif-<version>-win64/`, or
+*   Set `HEIF_ENC_PATH` and `HEIF_DEC_PATH` to the corresponding executables.
 
 ### 4. Run Development Server
 ```bash

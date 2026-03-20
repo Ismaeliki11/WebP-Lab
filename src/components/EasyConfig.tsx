@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
+import { TransformOptions } from "@/lib/image-tools";
 import { InfoTooltip } from "./InfoTooltip";
 
 type EasyGoal = "web-fast" | "balanced" | "max-quality" | "social";
@@ -9,7 +10,7 @@ type EasySize = "original" | "1920" | "1200" | "800";
 
 interface EasySettings {
     goal: EasyGoal;
-    format: "webp" | "avif" | "jpeg" | "png";
+    format: TransformOptions["format"];
     compressionLevel: 1 | 2 | 3;
     size: EasySize;
     stripMetadata: boolean;
@@ -159,7 +160,7 @@ export function EasyConfig({
                     <select
                         value={settings.format}
                         onChange={(event) =>
-                            setSettings((prev) => ({ ...prev, format: event.target.value as "webp" | "avif" | "jpeg" | "png" }))
+                            setSettings((prev) => ({ ...prev, format: event.target.value as TransformOptions["format"] }))
                         }
                         className="mt-1.5 w-full rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-medium shadow-sm outline-none focus:border-[var(--accent)]"
                     >

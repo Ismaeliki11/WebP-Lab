@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local codec/tooling caches
+/.tools/
+/.codex-heif-bin/
+/.codex-heic-test/

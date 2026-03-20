@@ -11,7 +11,7 @@ interface QueueItem {
     file: File;
     previewUrl: string;
     status?: "idle" | "processing" | "done" | "error" | "skipped";
-    isolatedFormat?: "webp" | "avif" | "jpeg" | "png";
+    isolatedFormat?: TransformOptions["format"];
     customOverrides?: Partial<TransformOptions>;
 }
 

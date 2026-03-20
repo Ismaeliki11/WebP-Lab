@@ -56,14 +56,14 @@ export function UploadZone({
                     </div>
                     <div>
                         <p className="text-base font-medium">{lang === 'es' ? "Suelta tus imagenes aqui" : "Drop your images here"}</p>
-                        <p className="mt-1 text-xs text-[var(--ink-soft)]">{lang === 'es' ? "JPG, PNG, WebP, AVIF y mas" : "JPG, PNG, WebP, AVIF and more"}</p>
+                        <p className="mt-1 text-xs text-[var(--ink-soft)]">{lang === 'es' ? "JPG, PNG, WebP, AVIF, HEIC y mas" : "JPG, PNG, WebP, AVIF, HEIC and more"}</p>
                     </div>
                     <label className="relative mt-2 inline-flex cursor-pointer items-center justify-center rounded-full bg-[var(--ink-0)] px-6 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--ink-soft)] shadow-lg shadow-black/5">
                         {lang === 'es' ? "Elegir archivos" : "Choose files"}
                         <input
                             type="file"
                             className="hidden"
-                            accept="image/*"
+                            accept="image/*,.heic,.heif"
                             multiple
                             onChange={onFileInput}
                         />

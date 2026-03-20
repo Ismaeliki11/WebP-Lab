@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import os from "node:os";
 import path from "node:path";
 
@@ -7,6 +8,7 @@ import sharp from "sharp";
 import { optimize } from "svgo";
 
 import { OutputFormat, TransformOptions, parseTransformOptions } from "@/lib/image-tools";
+import { decodeHeicToPngBuffer, encodeHeicFromImageBuffer } from "@/lib/heic-tools";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +18,7 @@ const OUTPUT_MIME: Record<OutputFormat, string> = {
   avif: "image/avif",
   jpeg: "image/jpeg",
   png: "image/png",
+  heic: "image/heic",
 };
 
 const OUTPUT_EXT: Record<OutputFormat, string> = {
@@ -23,6 +26,7 @@ const OUTPUT_EXT: Record<OutputFormat, string> = {
   avif: "avif",
   jpeg: "jpg",
   png: "png",
+  heic: "heic",
 };
 
 interface FileTransformSuccess {
@@ -131,6 +135,10 @@ function isImageLike(file: File): boolean {
   return file.type.startsWith("image/") || /\.(png|jpe?g|webp|avif|gif|tiff?|bmp|heic|heif)$/i.test(file.name);
 }
 
+function isHeicInput(file: File): boolean {
+  return file.type === "image/heic" || file.type === "image/heif" || /\.(heic|heif)$/i.test(file.name);
+}
+
 function contentDisposition(fileName: string): string {
   return `attachment; filename="${fileName}"`;
 }
@@ -168,7 +176,11 @@ async function transformOne(
     }
 
     const isSvg = file.type === "image/svg+xml" || file.name.endsWith(".svg");
-    let input = Buffer.from(await file.arrayBuffer());
+    let input: Buffer = Buffer.from(await file.arrayBuffer());
+
+    if (isHeicInput(file)) {
+      input = await decodeHeicToPngBuffer(input);
+    }
 
     // SVG Optimization path
     if (isSvg && options.format === "png") { // If we want to keep it as vector or optimized raster
@@ -298,7 +310,7 @@ async function transformOne(
         quality: options.quality,
         mozjpeg: true,
       });
-    } else {
+    } else if (options.format === "png") {
       image = image.png({
         compressionLevel: 9,
         quality: options.lossless ? 100 : options.quality,
@@ -306,7 +318,19 @@ async function transformOne(
       });
     }
 
-    const data = await image.toBuffer();
+    const data =
+      options.format === "heic"
+        ? await encodeHeicFromImageBuffer(
+          await image.png({
+            compressionLevel: 9,
+            palette: false,
+          }).toBuffer(),
+          {
+            quality: options.quality,
+            lossless: options.lossless,
+          },
+        )
+        : await image.toBuffer();
 
     // Determine final name
     const safeBaseName = sanitizeBaseName(file.name);

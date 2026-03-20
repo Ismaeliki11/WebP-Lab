@@ -183,6 +183,7 @@ export function ProConfig({
                                         <li><strong>AVIF:</strong> {lang === 'es' ? "Tecnología de vanguardia. Comprime mejor que WebP pero tiene menor compatibilidad en navegadores antiguos." : "Cutting-edge technology. Compresses better than WebP but has lower compatibility in older browsers."}</li>
                                         <li><strong>JPEG:</strong> {lang === 'es' ? "El clásico. 100% compatible. NO soporta fondos transparentes." : "The classic. 100% compatible. DOES NOT support transparent backgrounds."}</li>
                                         <li><strong>PNG:</strong> {lang === 'es' ? <>Utilízalo si necesitas <em>Lossless</em> (sin pérdida) en logotipos transparentes, no apto para fotografías web por su alto peso.</> : <>Use it if you need <em>Lossless</em> on transparent logos, not suitable for web photos due to its high file size.</>}</li>
+                                        <li><strong>HEIC:</strong> {lang === 'es' ? "HEIF con compresión HEVC. Muy eficiente y especialmente útil para flujos Apple o archivo moderno." : "HEIF with HEVC compression. Very efficient and especially useful for Apple workflows or modern archives."}</li>
                                     </ul>
                                 }
                             />

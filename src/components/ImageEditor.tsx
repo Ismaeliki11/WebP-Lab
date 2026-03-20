@@ -27,7 +27,7 @@ import {
     FileText,
     Info
 } from "lucide-react";
-import { TransformOptions, OutputFormat, RESIZE_FITS } from "@/lib/image-tools";
+import { TransformOptions, OutputFormat, OUTPUT_FORMATS, RESIZE_FITS } from "@/lib/image-tools";
 import { InfoTooltip, InfoNote } from "./InfoTooltip";
 
 interface ImageEditorProps {
@@ -91,7 +91,7 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
             if (!isOpen) return;
             setIsEstimating(true);
             try {
-                const formats: ("webp" | "avif" | "jpeg")[] = ["webp", "avif", "jpeg"];
+                const formats: OutputFormat[] = [...OUTPUT_FORMATS];
                 const results: Record<string, number> = {};
 
                 await Promise.all(formats.map(async (fmt) => {
