@@ -17,6 +17,7 @@ This repository is deployed on the OMV host `IsmaelOMV` at `192.168.8.124`.
 - A systemd timer runs `/usr/local/bin/webp-lab-autodeploy` every minute.
 - The timer fetches `origin/master`, rebuilds the container only when a new commit is detected, and keeps the existing container running if the rebuild fails.
 - Auto-update is pull-based. From the user's point of view it updates automatically after a push without storing GitHub secrets on the server.
+- On the Windows workstation, the intended one-step publish entrypoint is `publish-webp-lab.cmd` or `publish-webp-lab.ps1` from the repo root. They commit current changes on `master`, push to GitHub, and the OMV picks them up automatically.
 
 ## Host paths on OMV
 
