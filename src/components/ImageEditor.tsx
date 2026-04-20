@@ -28,6 +28,7 @@ import {
     Info
 } from "lucide-react";
 import { TransformOptions, OutputFormat, OUTPUT_FORMATS, RESIZE_FITS } from "@/lib/image-tools";
+import { withBasePath } from "@/lib/base-path";
 import { InfoTooltip, InfoNote } from "./InfoTooltip";
 
 interface ImageEditorProps {
@@ -98,7 +99,7 @@ export function ImageEditor({ isOpen, onClose, image, options, itemOverrides, on
                     const fd = new FormData();
                     fd.append("files", image.file);
                     fd.append("options", JSON.stringify({ ...localOptions, format: fmt }));
-                    const res = await fetch("/api/transform", { method: "POST", body: fd });
+                    const res = await fetch(withBasePath("/api/transform"), { method: "POST", body: fd });
                     if (res.ok) {
                         const size = Number(res.headers.get("x-total-output-bytes"));
                         if (size) results[fmt] = size;

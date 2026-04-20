@@ -28,6 +28,7 @@ import {
   estimateImpact,
   parseTransformOptions,
 } from "@/lib/image-tools";
+import { withBasePath } from "@/lib/base-path";
 
 import { StatsGrid } from "@/components/StatsGrid";
 import { UploadZone } from "@/components/UploadZone";
@@ -521,7 +522,7 @@ export default function HomeClient() {
       }),
     );
 
-    const response = await fetch("/api/transform", {
+    const response = await fetch(withBasePath("/api/transform"), {
       method: "POST",
       body: payload,
     });
@@ -771,7 +772,7 @@ export default function HomeClient() {
               payload.append("backgroundAsset", backgroundAsset.file, backgroundAsset.file.name);
             }
 
-            const response = await fetch("/api/transform", {
+            const response = await fetch(withBasePath("/api/transform"), {
               method: "POST",
               body: payload,
               signal: controller.signal,
@@ -848,7 +849,7 @@ export default function HomeClient() {
         }
 
         setStage("processing");
-        const response = await fetch("/api/transform", {
+        const response = await fetch(withBasePath("/api/transform"), {
           method: "POST",
           body: payload,
           signal: controller.signal,

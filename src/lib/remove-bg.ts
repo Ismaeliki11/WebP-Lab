@@ -5,7 +5,7 @@ import path from "node:path";
 const REMOVE_BG_URL = "https://api.remove.bg/v1.0/removebg";
 const PNG_MAX_PIXELS = 10_000_000;
 const MAX_RETRIES = 2;
-const PYTHON_COMMANDS = ["python", "py"];
+const PYTHON_COMMANDS = ["python3", "python", "py"];
 const PYTHON_SCRIPT_PATH = path.join(process.cwd(), "src", "lib", "remove-bg-fallback.py");
 
 interface RemoveBackgroundInput {

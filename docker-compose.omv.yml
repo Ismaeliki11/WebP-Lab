@@ -1,0 +1,25 @@
+services:
+  webp-lab:
+    container_name: webp-lab
+    image: webp-lab:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-/webp-lab}
+    env_file:
+      - ${WEBP_LAB_RUNTIME_ENV_FILE:-/docker-compose/webp-lab/runtime/webp-lab.env}
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      HEIF_DEC_PATH: ${HEIF_DEC_PATH:-/usr/bin/heif-dec}
+      HEIF_ENC_PATH: ${HEIF_ENC_PATH:-/usr/bin/heif-enc}
+      NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-/webp-lab}
+      NODE_ENV: production
+      NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=8192}
+    init: true
+    ports:
+      - "127.0.0.1:3001:3000"
+    restart: unless-stopped
+    volumes:
+      - /docker-compose/webp-lab/runtime/rembg-models:/root/.u2net

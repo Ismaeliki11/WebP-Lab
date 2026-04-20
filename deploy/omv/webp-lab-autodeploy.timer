@@ -1,0 +1,10 @@
+[Unit]
+Description=Check GitHub for new WebP Lab commits
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=60s
+Unit=webp-lab-autodeploy.service
+
+[Install]
+WantedBy=timers.target
