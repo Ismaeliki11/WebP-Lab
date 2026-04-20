@@ -45,7 +45,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 CMD node -e "const base=(process.env.NEXT_PUBLIC_BASE_PATH||'').replace(/\\/$/,''); fetch(`http://127.0.0.1:${process.env.PORT||3000}${base}/api/health`).then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 CMD node -e "const base=(process.env.NEXT_PUBLIC_BASE_PATH||'').replace(/\\/$/,''); const url='http://127.0.0.1:' + (process.env.PORT || '3000') + base + '/api/health'; fetch(url).then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "server.js"]
