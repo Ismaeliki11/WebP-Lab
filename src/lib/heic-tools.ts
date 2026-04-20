@@ -5,8 +5,8 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-const HEIF_DEC_NAME = process.platform === "win32" ? "heif-dec.exe" : "heif-dec";
-const HEIF_ENC_NAME = process.platform === "win32" ? "heif-enc.exe" : "heif-enc";
+const HEIF_DEC_NAMES = process.platform === "win32" ? ["heif-dec.exe"] : ["heif-dec", "heif-convert"];
+const HEIF_ENC_NAMES = process.platform === "win32" ? ["heif-enc.exe"] : ["heif-enc"];
 const PROJECT_TOOL_DIRS = [
   path.join(process.cwd(), ".tools"),
   path.join(process.cwd(), ".codex-heif-bin"),
@@ -25,18 +25,21 @@ async function pathExists(targetPath: string): Promise<boolean> {
 }
 
 export async function resolveHeicEncoderPath(): Promise<string> {
-  return resolveHeicToolPath(HEIF_ENC_NAME, cachedHeifEncoderPath);
+  return resolveHeicToolPath(HEIF_ENC_NAMES, "HEIF_ENC_PATH", cachedHeifEncoderPath);
 }
 
-async function resolveHeicToolPath(toolName: string, cachedValue: string | null): Promise<string> {
+async function resolveHeicToolPath(
+  toolNames: string[],
+  envKey: "HEIF_ENC_PATH" | "HEIF_DEC_PATH",
+  cachedValue: string | null,
+): Promise<string> {
   if (cachedValue) {
     return cachedValue;
   }
 
-  const envKey = toolName === HEIF_ENC_NAME ? "HEIF_ENC_PATH" : "HEIF_DEC_PATH";
   const configuredPath = process.env[envKey];
   if (configuredPath && (await pathExists(configuredPath))) {
-    if (toolName === HEIF_ENC_NAME) {
+    if (envKey === "HEIF_ENC_PATH") {
       cachedHeifEncoderPath = configuredPath;
     } else {
       cachedHeifDecoderPath = configuredPath;
@@ -44,59 +47,63 @@ async function resolveHeicToolPath(toolName: string, cachedValue: string | null)
     return configuredPath;
   }
 
-  for (const rootDir of PROJECT_TOOL_DIRS) {
-    const directCandidate = path.join(rootDir, toolName);
-    if (await pathExists(directCandidate)) {
-      if (toolName === HEIF_ENC_NAME) {
-        cachedHeifEncoderPath = directCandidate;
-      } else {
-        cachedHeifDecoderPath = directCandidate;
-      }
-      return directCandidate;
-    }
-
-    const children = await readdir(rootDir, { withFileTypes: true }).catch(() => []);
-    for (const child of children) {
-      if (!child.isDirectory()) {
-        continue;
-      }
-
-      const nestedCandidate = path.join(rootDir, child.name, toolName);
-      if (await pathExists(nestedCandidate)) {
-        if (toolName === HEIF_ENC_NAME) {
-          cachedHeifEncoderPath = nestedCandidate;
+  for (const toolName of toolNames) {
+    for (const rootDir of PROJECT_TOOL_DIRS) {
+      const directCandidate = path.join(rootDir, toolName);
+      if (await pathExists(directCandidate)) {
+        if (envKey === "HEIF_ENC_PATH") {
+          cachedHeifEncoderPath = directCandidate;
         } else {
-          cachedHeifDecoderPath = nestedCandidate;
+          cachedHeifDecoderPath = directCandidate;
         }
-        return nestedCandidate;
+        return directCandidate;
+      }
+
+      const children = await readdir(rootDir, { withFileTypes: true }).catch(() => []);
+      for (const child of children) {
+        if (!child.isDirectory()) {
+          continue;
+        }
+
+        const nestedCandidate = path.join(rootDir, child.name, toolName);
+        if (await pathExists(nestedCandidate)) {
+          if (envKey === "HEIF_ENC_PATH") {
+            cachedHeifEncoderPath = nestedCandidate;
+          } else {
+            cachedHeifDecoderPath = nestedCandidate;
+          }
+          return nestedCandidate;
+        }
       }
     }
   }
 
   const pathValue = process.env.PATH ?? "";
-  for (const segment of pathValue.split(path.delimiter)) {
-    if (!segment) {
-      continue;
-    }
-
-    const candidate = path.join(segment, toolName);
-    if (await pathExists(candidate)) {
-      if (toolName === HEIF_ENC_NAME) {
-        cachedHeifEncoderPath = candidate;
-      } else {
-        cachedHeifDecoderPath = candidate;
+  for (const toolName of toolNames) {
+    for (const segment of pathValue.split(path.delimiter)) {
+      if (!segment) {
+        continue;
       }
-      return candidate;
+
+      const candidate = path.join(segment, toolName);
+      if (await pathExists(candidate)) {
+        if (envKey === "HEIF_ENC_PATH") {
+          cachedHeifEncoderPath = candidate;
+        } else {
+          cachedHeifDecoderPath = candidate;
+        }
+        return candidate;
+      }
     }
   }
 
   throw new Error(
-    `No se encontro ${toolName}. Define ${envKey} o coloca ${toolName} dentro de ${PROJECT_TOOL_DIRS[0]}.`,
+    `No se encontro ${toolNames.join(" ni ")}. Define ${envKey} o coloca una de esas herramientas dentro de ${PROJECT_TOOL_DIRS[0]}.`,
   );
 }
 
 export async function resolveHeicDecoderPath(): Promise<string> {
-  return resolveHeicToolPath(HEIF_DEC_NAME, cachedHeifDecoderPath);
+  return resolveHeicToolPath(HEIF_DEC_NAMES, "HEIF_DEC_PATH", cachedHeifDecoderPath);
 }
 
 interface EncodeHeicOptions {
@@ -108,7 +115,7 @@ export async function encodeHeicFromImageBuffer(
   inputBuffer: Buffer,
   options: EncodeHeicOptions,
 ): Promise<Buffer> {
-  const encoderPath = await resolveHeicToolPath(HEIF_ENC_NAME, cachedHeifEncoderPath);
+  const encoderPath = await resolveHeicEncoderPath();
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "webp-lab-heic-"));
   const inputPath = path.join(tempDir, "input.png");
   const outputPath = path.join(tempDir, "output.heic");
@@ -151,14 +158,16 @@ export async function decodeHeicToPngBuffer(inputBuffer: Buffer): Promise<Buffer
   try {
     await writeFile(inputPath, inputBuffer);
 
-    await execFileAsync(
-      decoderPath,
-      ["--png-compression-level", "9", "-o", outputPath, inputPath],
-      {
-        windowsHide: true,
-        maxBuffer: 8 * 1024 * 1024,
-      },
-    );
+    const decoderName = path.basename(decoderPath).toLowerCase();
+    const args =
+      decoderName.startsWith("heif-convert")
+        ? [inputPath, outputPath]
+        : ["--png-compression-level", "9", "-o", outputPath, inputPath];
+
+    await execFileAsync(decoderPath, args, {
+      windowsHide: true,
+      maxBuffer: 8 * 1024 * 1024,
+    });
 
     return await readFile(outputPath);
   } catch (error) {

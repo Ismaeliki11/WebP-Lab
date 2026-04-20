@@ -33,7 +33,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libgomp1 \
     libheif-examples \
-    libheif-plugins-all \
     python3 \
     python3-venv \
     tini \

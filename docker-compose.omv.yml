@@ -12,7 +12,7 @@ services:
     environment:
       HOSTNAME: 0.0.0.0
       PORT: 3000
-      HEIF_DEC_PATH: ${HEIF_DEC_PATH:-/usr/bin/heif-dec}
+      HEIF_DEC_PATH: ${HEIF_DEC_PATH:-/usr/bin/heif-convert}
       HEIF_ENC_PATH: ${HEIF_ENC_PATH:-/usr/bin/heif-enc}
       NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-/webp-lab}
       NODE_ENV: production

@@ -42,7 +42,7 @@ This repository is deployed on the OMV host `IsmaelOMV` at `192.168.8.124`.
 ## Runtime decisions
 
 - Background removal is expected to run locally through `rembg` inside the container unless `REMOVE_BG_API_KEY` is set.
-- HEIC support relies on Linux `libheif` tools in the container: `heif-enc` and `heif-dec`.
+- HEIC support relies on Linux `libheif` tools in the container: `heif-enc` for encoding and `heif-convert` or `heif-dec` for decoding.
 - Large uploads are intentional. Nginx is configured with `client_max_body_size 2G`.
 - The production container uses `NODE_OPTIONS=--max-old-space-size=8192` unless overridden in the runtime env file.
 
