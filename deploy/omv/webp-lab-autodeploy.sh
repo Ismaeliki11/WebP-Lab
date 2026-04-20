@@ -27,6 +27,10 @@ if [ ! -f "${ENV_FILE}" ]; then
   cp "${REPO_DIR}/deploy/omv/webp-lab.env.example" "${ENV_FILE}"
 fi
 
+set -a
+. "${ENV_FILE}"
+set +a
+
 git -C "${REPO_DIR}" fetch --depth 1 origin "${BRANCH}"
 
 REMOTE_COMMIT="$(git -C "${REPO_DIR}" rev-parse "origin/${BRANCH}")"
@@ -38,7 +42,7 @@ fi
 
 git -C "${REPO_DIR}" checkout -B "${BRANCH}" "origin/${BRANCH}"
 
-BASE_PATH="$(awk -F= '/^NEXT_PUBLIC_BASE_PATH=/{print $2}' "${ENV_FILE}" | tail -n 1)"
+BASE_PATH="${NEXT_PUBLIC_BASE_PATH:-}"
 BASE_PATH="${BASE_PATH%/}"
 HEALTH_URL="http://127.0.0.1:3001${BASE_PATH}/api/health"
 
